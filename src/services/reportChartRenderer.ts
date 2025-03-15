@@ -28,9 +28,8 @@ export const generateChartAsBase64 = (canvasId: string, chartData: ChartData, ch
     
     const canvas = document.createElement('canvas');
     canvas.id = canvasId;
-    canvas.width = 500;  // Smaller width for better PDF fit
-    canvas.height = 280; // Smaller height proportionally
-    canvas.style.display = 'none';
+    canvas.width = 450;  // Smaller width for better PDF fit
+    canvas.height = 250; // Smaller height proportionally
     document.body.appendChild(canvas);
     
     const ctx = canvas.getContext('2d');
@@ -38,11 +37,10 @@ export const generateChartAsBase64 = (canvasId: string, chartData: ChartData, ch
       throw new Error('Could not get canvas context');
     }
     
-    // Set device pixel ratio for better resolution
+    // Set up proper canvas size
     const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
+    canvas.width = canvas.width * dpr;
+    canvas.height = canvas.height * dpr;
     ctx.scale(dpr, dpr);
     
     // Create appropriate chart based on type
@@ -62,13 +60,14 @@ export const generateChartAsBase64 = (canvasId: string, chartData: ChartData, ch
               title: {
                 display: true,
                 text: title,
-                font: { size: 14, weight: 'bold' }
+                font: { size: 12, weight: 'bold' }
               },
               legend: {
                 display: true,
                 position: 'top',
                 labels: {
-                  font: { size: 10 }
+                  font: { size: 9 },
+                  boxWidth: 8
                 }
               },
               tooltip: {
@@ -78,25 +77,28 @@ export const generateChartAsBase64 = (canvasId: string, chartData: ChartData, ch
             scales: {
               x: {
                 ticks: {
-                  font: { size: 8 },
+                  font: { size: 7 },
                   maxRotation: 45,
-                  minRotation: 45
+                  minRotation: 45,
+                  autoSkip: true,
+                  maxTicksLimit: 6
                 },
                 title: {
                   display: !!chartData.xAxisLabel,
                   text: chartData.xAxisLabel || '',
-                  font: { size: 10 }
+                  font: { size: 9 }
                 }
               },
               y: {
                 beginAtZero: true,
                 ticks: {
-                  font: { size: 8 }
+                  font: { size: 7 },
+                  maxTicksLimit: 5
                 },
                 title: {
                   display: !!chartData.yAxisLabel,
                   text: chartData.yAxisLabel || '',
-                  font: { size: 10 }
+                  font: { size: 9 }
                 }
               }
             }
@@ -119,14 +121,14 @@ export const generateChartAsBase64 = (canvasId: string, chartData: ChartData, ch
               title: {
                 display: true,
                 text: title,
-                font: { size: 14, weight: 'bold' }
+                font: { size: 12, weight: 'bold' }
               },
               legend: {
                 display: true,
                 position: 'right',
                 labels: {
-                  font: { size: 9 },
-                  boxWidth: 10,
+                  font: { size: 8 },
+                  boxWidth: 8,
                   generateLabels: (chart) => {
                     const data = chart.data;
                     if (data.labels?.length && data.datasets.length) {
@@ -168,13 +170,14 @@ export const generateChartAsBase64 = (canvasId: string, chartData: ChartData, ch
               title: {
                 display: true,
                 text: title,
-                font: { size: 14, weight: 'bold' }
+                font: { size: 12, weight: 'bold' }
               },
               legend: {
                 display: chartData.datasets && chartData.datasets.length > 1,
                 position: 'top',
                 labels: {
-                  font: { size: 9 }
+                  font: { size: 8 },
+                  boxWidth: 8
                 }
               },
               tooltip: {
@@ -184,25 +187,28 @@ export const generateChartAsBase64 = (canvasId: string, chartData: ChartData, ch
             scales: {
               x: {
                 ticks: {
-                  font: { size: 8 },
+                  font: { size: 7 },
                   maxRotation: 45,
-                  minRotation: 45
+                  minRotation: 45,
+                  autoSkip: true,
+                  maxTicksLimit: 6
                 },
                 title: {
                   display: !!chartData.xAxisLabel,
                   text: chartData.xAxisLabel || '',
-                  font: { size: 10 }
+                  font: { size: 9 }
                 }
               },
               y: {
                 beginAtZero: true,
                 ticks: {
-                  font: { size: 8 }
+                  font: { size: 7 },
+                  maxTicksLimit: 5
                 },
                 title: {
                   display: !!chartData.yAxisLabel,
                   text: chartData.yAxisLabel || '',
-                  font: { size: 10 }
+                  font: { size: 9 }
                 }
               }
             }
@@ -211,7 +217,7 @@ export const generateChartAsBase64 = (canvasId: string, chartData: ChartData, ch
         chart = new Chart(ctx, config);
       }
       
-      // Allow chart to render
+      // Allow chart to render with a longer timeout
       setTimeout(() => {
         const imgData = canvas.toDataURL('image/png', 1.0);
         
@@ -221,7 +227,7 @@ export const generateChartAsBase64 = (canvasId: string, chartData: ChartData, ch
         document.body.removeChild(canvas);
         
         resolve(imgData);
-      }, 200); // Increased timeout for better rendering
+      }, 500); // Increased timeout for better rendering
     } catch (error) {
       console.error('Error generating chart:', error);
       // Remove canvas if there was an error

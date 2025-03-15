@@ -22,10 +22,10 @@ export const prepareSymptomChartData = (symptomsData: any[]): ChartData => {
 };
 
 export const prepareMoodChartData = (moodData: any[]): ChartData => {
-  // Sort by date and limit to last 10 entries for better readability
+  // Sort by date and limit to last 7 entries for better readability
   const sortedData = [...moodData]
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    .slice(-10);
+    .slice(-7);
     
   const dates = sortedData.map(entry => format(new Date(entry.date), 'MMM d'));
   const moodScores = sortedData.map(entry => entry.mood_score || 0);
@@ -97,7 +97,7 @@ export const prepareMedicationAdherenceChartData = (medicationsData: any[], medi
       const adherence = Math.round((takenDays / totalPossibleDays) * 100);
       
       // Truncate long medication names
-      const displayName = med.name.length > 10 ? med.name.substring(0, 8) + '...' : med.name;
+      const displayName = med.name.length > 8 ? med.name.substring(0, 6) + '...' : med.name;
       medicationNames.push(displayName);
       adherenceValues.push(adherence);
     }

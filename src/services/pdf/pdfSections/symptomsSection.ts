@@ -17,15 +17,15 @@ export const addSymptomsSection = async (
     return { yPosition, currentPage };
   }
   
-  // Check if we need a page break before starting symptoms section
-  const pageBreakResult = checkPageBreak(doc, currentPage, 50);
-  yPosition = pageBreakResult.newY;
-  currentPage = pageBreakResult.currentPage;
+  // Always start a new page for major sections
+  doc.addPage();
+  currentPage++;
+  yPosition = 25;
   
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
   doc.text('Symptoms Data', 14, yPosition);
-  yPosition += 10;
+  yPosition += 15;
   
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(11);
@@ -50,7 +50,7 @@ export const addSymptomsSection = async (
     },
   });
   
-  yPosition = (doc as any).lastAutoTable.finalY + 15;
+  yPosition = (doc as any).lastAutoTable.finalY + 20;
   
   if (includeCharts && symptomsData.length > 0) {
     // Check if we need a page break for the chart
@@ -61,7 +61,7 @@ export const addSymptomsSection = async (
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
     doc.text('Symptom Frequency', 14, yPosition);
-    yPosition += 10;
+    yPosition += 15;
     
     const symptomChartData = prepareSymptomChartData(symptomsData);
     
@@ -74,10 +74,10 @@ export const addSymptomsSection = async (
       );
       
       const pageWidth = doc.internal.pageSize.width;
-      const imgWidth = 170;
-      const imgHeight = 90;
+      const imgWidth = 150;
+      const imgHeight = 80;
       doc.addImage(chartImgData, 'PNG', (pageWidth - imgWidth) / 2, yPosition, imgWidth, imgHeight);
-      yPosition += imgHeight + 20;
+      yPosition += imgHeight + 25;
     } catch (error) {
       console.error('Error generating symptom chart:', error);
       yPosition += 10;

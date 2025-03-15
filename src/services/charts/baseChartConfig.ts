@@ -12,13 +12,13 @@ export const getCommonChartConfig = () => ({
   layout: {
     padding: {
       top: 10,
-      right: 25,
-      bottom: 25,
-      left: 25
+      right: 20,
+      bottom: 20,
+      left: 20
     }
   },
   font: {
-    size: 9 // Smaller base font size
+    size: 8 // Smaller base font size
   }
 });
 
@@ -26,8 +26,8 @@ export const getCommonChartConfig = () => ({
 export const createNoDataCanvas = (
   canvasId: string, 
   title: string, 
-  width = 500, // Smaller default width
-  height = 280 // Smaller default height
+  width = 450, // Smaller default width
+  height = 250 // Smaller default height
 ): HTMLCanvasElement => {
   const canvas = document.createElement('canvas');
   canvas.id = canvasId;
@@ -39,13 +39,13 @@ export const createNoDataCanvas = (
     ctx.fillStyle = '#f9f9f9';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    ctx.font = 'bold 16px Arial';
+    ctx.font = 'bold 14px Arial';
     ctx.fillStyle = '#666666';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(title, canvas.width / 2, 30);
+    ctx.fillText(title, canvas.width / 2, 25);
     
-    ctx.font = '14px Arial';
+    ctx.font = '12px Arial';
     ctx.fillText('No data available for this chart', canvas.width / 2, canvas.height / 2);
   }
   

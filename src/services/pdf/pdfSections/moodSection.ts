@@ -17,15 +17,15 @@ export const addMoodSection = async (
     return { yPosition, currentPage };
   }
   
-  // Check if we need a page break before starting mood section
-  const pageBreakResult = checkPageBreak(doc, currentPage, 50);
-  yPosition = pageBreakResult.newY;
-  currentPage = pageBreakResult.currentPage;
+  // Always start a new page for major sections
+  doc.addPage();
+  currentPage++;
+  yPosition = 25;
   
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
   doc.text('Mood & Energy Data', 14, yPosition);
-  yPosition += 10;
+  yPosition += 15;
   
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(11);
@@ -51,7 +51,7 @@ export const addMoodSection = async (
     },
   });
   
-  yPosition = (doc as any).lastAutoTable.finalY + 15;
+  yPosition = (doc as any).lastAutoTable.finalY + 20;
   
   if (includeCharts && moodData.length > 0) {
     // Check if we need a page break for the chart
@@ -62,7 +62,7 @@ export const addMoodSection = async (
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
     doc.text('Mood & Energy Trends', 14, yPosition);
-    yPosition += 10;
+    yPosition += 15;
     
     const moodChartData = prepareMoodChartData(moodData);
     
@@ -75,10 +75,10 @@ export const addMoodSection = async (
       );
       
       const pageWidth = doc.internal.pageSize.width;
-      const imgWidth = 170;
-      const imgHeight = 90;
+      const imgWidth = 150;
+      const imgHeight = 80;
       doc.addImage(chartImgData, 'PNG', (pageWidth - imgWidth) / 2, yPosition, imgWidth, imgHeight);
-      yPosition += imgHeight + 20;
+      yPosition += imgHeight + 25;
     } catch (error) {
       console.error('Error generating mood chart:', error);
       yPosition += 10;

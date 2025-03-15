@@ -19,15 +19,15 @@ export const addMedicationsSection = async (
     return { yPosition, currentPage };
   }
   
-  // Check if we need a page break before starting medications section
-  const pageBreakResult = checkPageBreak(doc, currentPage, 50);
-  yPosition = pageBreakResult.newY;
-  currentPage = pageBreakResult.currentPage;
+  // Always start a new page for major sections
+  doc.addPage();
+  currentPage++;
+  yPosition = 25;
   
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
   doc.text('Medications', 14, yPosition);
-  yPosition += 10;
+  yPosition += 15;
   
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(11);
@@ -72,7 +72,7 @@ export const addMedicationsSection = async (
     },
   });
   
-  yPosition = (doc as any).lastAutoTable.finalY + 15;
+  yPosition = (doc as any).lastAutoTable.finalY + 20;
   
   if (medicationHistoryData && medicationHistoryData.length > 0) {
     // Filter medication history to match selected medications
@@ -84,18 +84,18 @@ export const addMedicationsSection = async (
       );
     }
     
-    // Limit history to last 30 entries for readability
-    filteredHistory = filteredHistory.slice(0, 30);
+    // Limit history to last 15 entries for readability
+    filteredHistory = filteredHistory.slice(0, 15);
     
     // Check for page break before medication history
-    const historyPageBreakResult = checkPageBreak(doc, currentPage, 130);
+    const historyPageBreakResult = checkPageBreak(doc, currentPage, 60);
     yPosition = historyPageBreakResult.newY;
     currentPage = historyPageBreakResult.currentPage;
     
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.text('Medication History (Last 30 Entries)', 14, yPosition);
-    yPosition += 10;
+    doc.text('Medication History (Last 15 Entries)', 14, yPosition);
+    yPosition += 15;
     
     const medicationHistoryTableData = filteredHistory.map((entry: any) => {
       const medicationName = entry.medications?.name || 'Unknown';
@@ -125,7 +125,7 @@ export const addMedicationsSection = async (
       },
     });
     
-    yPosition = (doc as any).lastAutoTable.finalY + 15;
+    yPosition = (doc as any).lastAutoTable.finalY + 20;
     
     if (includeCharts) {
       // Check for page break before adherence chart
@@ -136,7 +136,7 @@ export const addMedicationsSection = async (
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
       doc.text('Medication Adherence', 14, yPosition);
-      yPosition += 10;
+      yPosition += 15;
       
       try {
         const medicationAdherenceData = prepareMedicationAdherenceChartData(
@@ -152,10 +152,10 @@ export const addMedicationsSection = async (
         );
         
         const pageWidth = doc.internal.pageSize.getWidth();
-        const imgWidth = 170;
-        const imgHeight = 90;
+        const imgWidth = 150;
+        const imgHeight = 80;
         doc.addImage(chartImgData, 'PNG', (pageWidth - imgWidth) / 2, yPosition, imgWidth, imgHeight);
-        yPosition += imgHeight + 20;
+        yPosition += imgHeight + 25;
       } catch (error) {
         console.error('Error generating medication chart:', error);
         yPosition += 10;

@@ -17,10 +17,15 @@ export const addCycleSection = async (
     return { yPosition, currentPage };
   }
   
+  // Always start a new page for major sections
+  doc.addPage();
+  currentPage++;
+  yPosition = 25;
+  
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
   doc.text('Menstrual Cycle Data', 14, yPosition);
-  yPosition += 10;
+  yPosition += 15;
   
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(11);
@@ -46,7 +51,7 @@ export const addCycleSection = async (
     },
   });
   
-  yPosition = (doc as any).lastAutoTable.finalY + 15;
+  yPosition = (doc as any).lastAutoTable.finalY + 20;
   
   if (includeCharts) {
     // Check if we need a page break for the chart
@@ -57,7 +62,7 @@ export const addCycleSection = async (
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
     doc.text('Cycle Phase Distribution', 14, yPosition);
-    yPosition += 10;
+    yPosition += 15;
     
     const cycleChartData = prepareCyclePhaseChartData(cycleData);
     
@@ -71,10 +76,10 @@ export const addCycleSection = async (
       
       // Add the image at a higher quality and better size ratio
       const pageWidth = doc.internal.pageSize.width;
-      const imgWidth = 170;
-      const imgHeight = 90;
+      const imgWidth = 150;
+      const imgHeight = 80;
       doc.addImage(chartImgData, 'PNG', (pageWidth - imgWidth) / 2, yPosition, imgWidth, imgHeight);
-      yPosition += imgHeight + 20;
+      yPosition += imgHeight + 25;
     } catch (error) {
       console.error('Error generating cycle chart:', error);
       yPosition += 10;
