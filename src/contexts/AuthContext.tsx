@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
@@ -19,46 +18,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  // Fetch the user and ensure state updates dynamically
   useEffect(() => {
     const fetchUser = async () => {
-      try {
-        const { data } = await supabase.auth.getUser();
-        setUser(data.user);
-      } catch (error) {
-        console.error('Error fetching user:', error);
-      } finally {
-        setLoading(false);
-      }
+      setLoading(true);
+      const { data, error } = await supabase.auth.getSession();
+      if (error) console.error('Error fetching session:', error);
+      setUser(data?.session?.user || null);
+      setLoading(false);
     };
 
     fetchUser();
 
-    // Track explicit sign-ins across browser sessions with localStorage instead of sessionStorage
-    const hasShownWelcomeToast = localStorage.getItem('hasShownWelcomeToast') === 'true';
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log(`Auth event: ${event}`, session);
+      setUser(session?.user || null);
+      setLoading(false);
 
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (session?.user) {
-          setUser(session.user);
-          
-          // Only show welcome toast on explicit SIGNED_IN event and if we haven't shown it already
-          if (event === 'SIGNED_IN' && !hasShownWelcomeToast) {
-            toast({
-              title: "Welcome back!",
-              description: "You have successfully signed in.",
-            });
-            localStorage.setItem('hasShownWelcomeToast', 'true');
-          }
-        } else {
-          setUser(null);
-          // Clear the flag when user signs out
-          if (event === 'SIGNED_OUT') {
-            localStorage.removeItem('hasShownWelcomeToast');
-          }
-        }
-        setLoading(false);
+      if (event === 'SIGNED_IN') {
+        toast({
+          title: "Welcome back!",
+          description: "You have successfully signed in.",
+        });
+      } else if (event === 'SIGNED_OUT') {
+        toast({
+          title: 'Signed out successfully',
+          description: 'You have been signed out of your account.',
+        });
+        navigate('/');
       }
-    );
+    });
 
     return () => {
       authListener.subscription.unsubscribe();
@@ -67,10 +56,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUp = async (email: string, password: string) => {
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
+      const { data, error } = await supabase.auth.signUp({ email, password });
 
       if (error) {
         toast({
@@ -81,6 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw error;
       }
 
+      setUser(data?.user); // Ensure immediate update
       return data;
     } catch (error: any) {
       console.error('Error signing up:', error.message);
@@ -90,14 +77,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signIn = async (email: string, password: string) => {
     try {
-      // For development purposes, we'll hardcode mack@gmail.com credentials
-      const actualEmail = email === 'mack@gmail.com' ? 'mack@gmail.com' : email;
-      const actualPassword = email === 'mack@gmail.com' ? 'mohithtony' : password;
-      
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: actualEmail,
-        password: actualPassword,
-      });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
       if (error) {
         toast({
@@ -108,9 +88,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw error;
       }
 
-      // Remove this line as we're handling the toast in the onAuthStateChange
-      // localStorage.setItem('hasShownWelcomeToast', 'false');
-      
+      setUser(data?.user); // Update state immediately
       return data;
     } catch (error: any) {
       console.error('Error signing in:', error.message);
@@ -122,11 +100,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
+
+      setUser(null); // Immediately clear user state
+      localStorage.removeItem('hasShownWelcomeToast'); // Ensure fresh login next time
       navigate('/');
-      toast({
-        title: 'Signed out successfully',
-        description: 'You have been signed out of your account.',
-      });
     } catch (error: any) {
       console.error('Error signing out:', error.message);
       toast({
@@ -138,15 +115,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        signUp,
-        signIn,
-        signOut,
-        loading,
-      }}
-    >
+    <AuthContext.Provider value={{ user, signUp, signIn, signOut, loading }}>
       {children}
     </AuthContext.Provider>
   );
