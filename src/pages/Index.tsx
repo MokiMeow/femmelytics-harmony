@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Calendar, Sparkles, Shield, BarChart, Activity, CheckCircle } from 'lucide-react';
@@ -6,7 +5,6 @@ import { Link } from 'react-router-dom';
 import Navigation from '@/components/Navigation';
 
 const Index = () => {
-  // Scroll to top when page loads
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -186,15 +184,15 @@ const Index = () => {
               viewport={{ once: true }}
               className="relative"
             >
-              <div className="bg-gradient-to-br from-lavender-100 to-teal-100 rounded-2xl p-1">
+              <Link to="/dashboard" className="block bg-gradient-to-br from-lavender-100 to-teal-100 rounded-2xl p-1 transition-transform hover:scale-[1.02]">
                 <div className="rounded-xl overflow-hidden shadow-lg border border-white/50">
                   <img 
-                    src="https://placehold.co/600x400/f5f3ff/6d28d9?text=Dashboard+Preview"
+                    src="https://plus.unsplash.com/premium_photo-1681487390299-4d6fab146093?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
                     alt="Dashboard Preview" 
                     className="w-full h-auto rounded-xl"
                   />
                 </div>
-              </div>
+              </Link>
               
               {/* Float elements */}
               <div className="absolute -top-8 -right-8 bg-white rounded-xl shadow-lg p-4 animate-float">
@@ -259,7 +257,7 @@ const Index = () => {
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/register" className="premium-button bg-white text-primary hover:bg-white/90">
+                <Link to="/auth?tab=signup" className="premium-button bg-white text-primary hover:bg-white/90">
                   Create Free Account
                 </Link>
                 <Link to="/about" className="premium-button bg-white/20 text-white hover:bg-white/30">
@@ -293,9 +291,9 @@ const Index = () => {
               <div>
                 <h4 className="font-medium mb-3">Product</h4>
                 <ul className="space-y-2">
-                  <li><Link to="/features" className="text-sm text-muted-foreground hover:text-foreground">Features</Link></li>
-                  <li><Link to="/pricing" className="text-sm text-muted-foreground hover:text-foreground">Pricing</Link></li>
-                  <li><Link to="/faq" className="text-sm text-muted-foreground hover:text-foreground">FAQ</Link></li>
+                  <li><Link to="/about" className="text-sm text-muted-foreground hover:text-foreground">Features</Link></li>
+                  <li><Link to="/about" className="text-sm text-muted-foreground hover:text-foreground">Pricing</Link></li>
+                  <li><Link to="/about" className="text-sm text-muted-foreground hover:text-foreground">FAQ</Link></li>
                 </ul>
               </div>
               
@@ -303,16 +301,16 @@ const Index = () => {
                 <h4 className="font-medium mb-3">Company</h4>
                 <ul className="space-y-2">
                   <li><Link to="/about" className="text-sm text-muted-foreground hover:text-foreground">About</Link></li>
-                  <li><Link to="/blog" className="text-sm text-muted-foreground hover:text-foreground">Blog</Link></li>
-                  <li><Link to="/contact" className="text-sm text-muted-foreground hover:text-foreground">Contact</Link></li>
+                  <li><Link to="/about" className="text-sm text-muted-foreground hover:text-foreground">Blog</Link></li>
+                  <li><Link to="/about" className="text-sm text-muted-foreground hover:text-foreground">Contact</Link></li>
                 </ul>
               </div>
               
               <div>
                 <h4 className="font-medium mb-3">Legal</h4>
                 <ul className="space-y-2">
-                  <li><Link to="/privacy" className="text-sm text-muted-foreground hover:text-foreground">Privacy</Link></li>
-                  <li><Link to="/terms" className="text-sm text-muted-foreground hover:text-foreground">Terms</Link></li>
+                  <li><Link to="/about" className="text-sm text-muted-foreground hover:text-foreground">Privacy</Link></li>
+                  <li><Link to="/about" className="text-sm text-muted-foreground hover:text-foreground">Terms</Link></li>
                 </ul>
               </div>
             </div>
