@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { format, addDays, parseISO, subDays, eachDayOfInterval, differenceInDays } from 'date-fns';
 import { CycleEntry, MoodEntry, SymptomEntry, CycleStatistics } from './trackerService';
@@ -102,10 +101,10 @@ export const fetchDashboardData = async (days: number = 30): Promise<DashboardDa
     if (statsError) throw statsError;
     
     // Generate cycle chart data
-    const cycleChartData = processChartData(cycleData, moodData, symptomsData);
+    const cycleChartData = processChartData(cycleData || [], moodData || [], symptomsData || []);
     
     // Generate symptoms pie data
-    const symptomsPieData = processSymptomsPieData(symptomsData);
+    const symptomsPieData = processSymptomsPieData(symptomsData || []);
     
     // Generate mood trend data over last 6 months
     const moodTrendData = await processMoodTrendData(userId);
@@ -323,6 +322,11 @@ const processSymptomsPieData = (symptomsData: SymptomEntry[]) => {
     }
   });
   
+  // If no symptoms data, return default message
+  if (Object.keys(symptomCounts).length === 0) {
+    return [{ name: 'No Data', value: 1, color: '#d1d5db' }];
+  }
+  
   // Convert to pie chart format
   const pieData = Object.entries(symptomCounts)
     .map(([name, value]) => ({
@@ -370,10 +374,15 @@ const processMoodTrendData = async (userId: string) => {
   
   if (error) throw error;
   
+  // If no mood data, return default values
+  if (!moodData || moodData.length === 0) {
+    return months.map(month => ({ month, average: 0 }));
+  }
+  
   // Calculate monthly averages
   const monthlyAverages: Record<string, { sum: number, count: number }> = {};
   
-  moodData?.forEach(entry => {
+  moodData.forEach(entry => {
     const month = format(parseISO(entry.date), 'MMM');
     if (!monthlyAverages[month]) {
       monthlyAverages[month] = { sum: 0, count: 0 };
@@ -422,6 +431,14 @@ const processCycleLengthData = async (userId: string) => {
     }
     lastDate = entry.date;
   });
+  
+  // If not enough data for cycle calculation
+  if (periodStartDates.length < 2) {
+    return Array.from({ length: 6 }, (_, i) => ({
+      cycle: i + 1,
+      days: 28
+    }));
+  }
   
   // Calculate cycle lengths
   const cycleLengths: number[] = [];
