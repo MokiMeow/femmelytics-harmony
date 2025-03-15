@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTr
 import { Menu } from 'lucide-react';
 import { useMobile } from '@/hooks/useMobile';
 import UserNavigation from './UserNavigation';
+import { ThemeToggle } from './ThemeToggle';
 
 const Navigation = () => {
   const { pathname } = useLocation();
@@ -39,36 +40,39 @@ const Navigation = () => {
 
         {isMobile ? (
           <>
-            <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={toggleMenu}>
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="sm:w-64">
-                <SheetHeader>
-                  <SheetTitle>Menu</SheetTitle>
-                  <SheetDescription>
-                    Explore Femmelytics
-                  </SheetDescription>
-                </SheetHeader>
-                <div className="py-4">
-                  <nav className="grid gap-4">
-                    {navLinks.map((link) => (
-                      <Link
-                        key={link.name}
-                        to={link.path}
-                        className={`flex items-center text-sm font-medium ${pathname === link.path ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        {link.name}
-                      </Link>
-                    ))}
-                  </nav>
-                </div>
-                <UserNavigation />
-              </SheetContent>
-            </Sheet>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={toggleMenu}>
+                    <Menu className="h-5 w-5" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="sm:w-64">
+                  <SheetHeader>
+                    <SheetTitle>Menu</SheetTitle>
+                    <SheetDescription>
+                      Explore Femmelytics
+                    </SheetDescription>
+                  </SheetHeader>
+                  <div className="py-4">
+                    <nav className="grid gap-4">
+                      {navLinks.map((link) => (
+                        <Link
+                          key={link.name}
+                          to={link.path}
+                          className={`flex items-center text-sm font-medium ${pathname === link.path ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          {link.name}
+                        </Link>
+                      ))}
+                    </nav>
+                  </div>
+                  <UserNavigation />
+                </SheetContent>
+              </Sheet>
+            </div>
           </>
         ) : (
           <div className="flex items-center gap-8">
@@ -83,7 +87,10 @@ const Navigation = () => {
                 </Link>
               ))}
             </nav>
-            <UserNavigation />
+            <div className="flex items-center gap-4">
+              <ThemeToggle />
+              <UserNavigation />
+            </div>
           </div>
         )}
       </div>

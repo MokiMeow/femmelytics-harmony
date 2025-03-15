@@ -40,24 +40,24 @@
 
   .dark {
     --background: 280 15% 10%;
-    --foreground: 280 10% 90%;
+    --foreground: 280 10% 95%;
     
     --card: 280 15% 15%;
-    --card-foreground: 280 10% 90%;
+    --card-foreground: 280 10% 95%;
     
     --popover: 280 15% 15%;
-    --popover-foreground: 280 10% 90%;
+    --popover-foreground: 280 10% 95%;
     
-    --primary: 265 83% 45%;
+    --primary: 265 70% 60%;
     --primary-foreground: 0 0% 100%;
     
-    --secondary: 170 75% 41%;
+    --secondary: 170 60% 45%;
     --secondary-foreground: 0 0% 100%;
     
     --muted: 280 15% 20%;
-    --muted-foreground: 280 5% 65%;
+    --muted-foreground: 280 5% 70%;
     
-    --accent: 350 89% 60%;
+    --accent: 350 80% 65%;
     --accent-foreground: 0 0% 100%;
     
     --destructive: 0 84% 60%;
@@ -65,7 +65,7 @@
     
     --border: 280 15% 25%;
     --input: 280 15% 25%;
-    --ring: 265 83% 45%;
+    --ring: 265 70% 60%;
   }
  
   * {
@@ -178,4 +178,40 @@ html {
 /* Remove blue highlight on mobile */
 * {
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Dark mode improvements for testimonials and feature cards */
+.dark .glass-card {
+  background-color: rgba(30, 30, 40, 0.6);
+  backdrop-filter: blur(12px);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.dark .bg-lavender-50 {
+  background-color: rgba(30, 30, 40, 0.3);
+}
+
+.dark .bg-gradient-to-b.from-background.to-lavender-50 {
+  background-image: linear-gradient(to bottom, hsl(var(--background)), rgba(30, 30, 40, 0.3));
+}
+
+.dark .bg-gradient-to-t.from-background.to-lavender-50 {
+  background-image: linear-gradient(to top, hsl(var(--background)), rgba(30, 30, 40, 0.3));
+}
+
+.dark .text-yellow-400 {
+  color: #FFD700;
+}
+
+.dark .bg-white {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark .text-primary.bg-gradient-to-r,
+.dark .bg-gradient-to-r.from-violet-600.via-primary.to-purple-600.text-transparent.bg-clip-text {
+  background-image: linear-gradient(to right, #a78bfa, #8b5cf6, #9333ea);
+}
+
+.dark .bg-gradient-to-r.from-primary.to-purple-600.hover\:from-primary\/90.hover\:to-purple-600\/90 {
+  background-image: linear-gradient(to right, #8b5cf6, #9333ea);
 }
