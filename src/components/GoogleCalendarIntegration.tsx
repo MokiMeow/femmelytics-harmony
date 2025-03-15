@@ -101,7 +101,7 @@ const GoogleCalendarIntegration = ({ isConnected, onStatusChange }: GoogleCalend
       
       toast({
         title: "Calendar Disconnected",
-        description: "Your Google Calendar has been disconnected",
+        description: "Your Google Calendar has been disconnected"
       });
       
       if (onStatusChange) {

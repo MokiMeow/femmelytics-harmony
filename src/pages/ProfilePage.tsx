@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,12 +38,15 @@ const ProfilePage = () => {
           .eq('id', user.id)
           .single();
           
-        if (error) throw error;
+        if (error) {
+          console.error('Error in profile fetch:', error);
+          return;
+        }
         
         if (data) {
           setFirstName(data.first_name || "");
           setLastName(data.last_name || "");
-          setAvatarUrl(data.avatar_url);
+          setAvatarUrl(data.avatar_url || null);
           setIsCalendarConnected(data.is_calendar_connected || false);
         }
       } catch (error) {
@@ -201,7 +203,6 @@ const ProfilePage = () => {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* Sidebar with Avatar */}
         <div className="md:col-span-1">
           <Card className="bg-gradient-to-b from-lavender-50 to-background dark:from-lavender-900/30 dark:to-background">
             <CardContent className="pt-6 flex flex-col items-center">
@@ -254,7 +255,6 @@ const ProfilePage = () => {
           </Card>
         </div>
         
-        {/* Main Content */}
         <div className="md:col-span-3">
           <Tabs defaultValue="personal" className="w-full">
             <TabsList className="mb-6">

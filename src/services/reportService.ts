@@ -1,11 +1,9 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { fetchActiveMedications } from './medicationService';
 import { Chart, registerables } from 'chart.js';
-import { PieArcDatum } from '@visx/shape/lib/shapes/Pie';
 
 // Register Chart.js components
 Chart.register(...registerables);
@@ -29,12 +27,10 @@ export const generateReport = async (options: ExportOptions): Promise<Blob> => {
     throw new Error('User not authenticated');
   }
   
-  // Calculate date range
   const endDate = new Date();
   const startDate = new Date();
   startDate.setDate(endDate.getDate() - options.period);
   
-  // Collect all requested data
   const reportData: any = {
     period: options.period,
     startDate: format(startDate, 'yyyy-MM-dd'),
@@ -57,12 +53,10 @@ export const generateReport = async (options: ExportOptions): Promise<Blob> => {
     reportData.medicationsData = await fetchActiveMedications();
   }
   
-  // Generate AI summary if requested
   if (options.includeSummary) {
     reportData.summary = await generateAISummary(reportData);
   }
   
-  // Create PDF report
   const pdfBlob = await createPDFReport(reportData, options.includeCharts);
   return pdfBlob;
 };
@@ -108,7 +102,6 @@ const fetchMoodData = async (userId: string, startDate: Date, endDate: Date) => 
 
 const generateAISummary = async (reportData: any): Promise<string> => {
   try {
-    // Call our Edge Function to generate the summary with OpenAI
     const { data, error } = await supabase.functions.invoke('generate-report-summary', {
       body: { reportData }
     });
@@ -123,7 +116,6 @@ const generateAISummary = async (reportData: any): Promise<string> => {
 
 const generateChartAsBase64 = (canvasId: string, chartData: any, chartType: string, title: string): Promise<string> => {
   return new Promise((resolve) => {
-    // Create a temporary canvas
     const canvas = document.createElement('canvas');
     canvas.id = canvasId;
     canvas.width = 500;
@@ -131,7 +123,6 @@ const generateChartAsBase64 = (canvasId: string, chartData: any, chartType: stri
     canvas.style.display = 'none';
     document.body.appendChild(canvas);
     
-    // Get the canvas context and create the chart
     const ctx = canvas.getContext('2d');
     if (!ctx) {
       throw new Error('Could not get canvas context');
@@ -247,10 +238,8 @@ const generateChartAsBase64 = (canvasId: string, chartData: any, chartType: stri
       });
     }
     
-    // Convert chart to base64 image
     const imgData = canvas.toDataURL('image/png');
     
-    // Clean up
     if (chart) {
       chart.destroy();
     }
@@ -319,7 +308,6 @@ const prepareCyclePhaseChartData = (cycleData: any[]): any => {
 const createPDFReport = async (reportData: any, includeCharts: boolean): Promise<Blob> => {
   const doc = new jsPDF();
   
-  // Add title and date
   doc.setFontSize(20);
   doc.text('Health Report', 105, 15, { align: 'center' });
   
@@ -328,7 +316,6 @@ const createPDFReport = async (reportData: any, includeCharts: boolean): Promise
   
   let yPosition = 35;
   
-  // Add cycle data if available
   if (reportData.cycleData && reportData.cycleData.length > 0) {
     doc.setFontSize(16);
     doc.text('Menstrual Cycle Data', 14, yPosition);
@@ -349,9 +336,7 @@ const createPDFReport = async (reportData: any, includeCharts: boolean): Promise
     
     yPosition = (doc as any).lastAutoTable.finalY + 15;
     
-    // Add cycle phase chart if requested
     if (includeCharts && reportData.cycleData.length > 0) {
-      // Check if we need a new page
       if (yPosition > 180) {
         doc.addPage();
         yPosition = 20;
@@ -379,9 +364,7 @@ const createPDFReport = async (reportData: any, includeCharts: boolean): Promise
     }
   }
   
-  // Add symptom data if available
   if (reportData.symptomsData && reportData.symptomsData.length > 0) {
-    // Check if we need a new page
     if (yPosition > 230) {
       doc.addPage();
       yPosition = 20;
@@ -405,9 +388,7 @@ const createPDFReport = async (reportData: any, includeCharts: boolean): Promise
     
     yPosition = (doc as any).lastAutoTable.finalY + 15;
     
-    // Add symptoms chart if requested
     if (includeCharts && reportData.symptomsData.length > 0) {
-      // Check if we need a new page
       if (yPosition > 180) {
         doc.addPage();
         yPosition = 20;
@@ -435,9 +416,7 @@ const createPDFReport = async (reportData: any, includeCharts: boolean): Promise
     }
   }
   
-  // Add mood data if available
   if (reportData.moodData && reportData.moodData.length > 0) {
-    // Check if we need a new page
     if (yPosition > 230) {
       doc.addPage();
       yPosition = 20;
@@ -462,9 +441,7 @@ const createPDFReport = async (reportData: any, includeCharts: boolean): Promise
     
     yPosition = (doc as any).lastAutoTable.finalY + 15;
     
-    // Add mood chart if requested
     if (includeCharts && reportData.moodData.length > 0) {
-      // Check if we need a new page
       if (yPosition > 180) {
         doc.addPage();
         yPosition = 20;
@@ -492,9 +469,7 @@ const createPDFReport = async (reportData: any, includeCharts: boolean): Promise
     }
   }
   
-  // Add medications data if available
   if (reportData.medicationsData && reportData.medicationsData.length > 0) {
-    // Check if we need a new page
     if (yPosition > 230) {
       doc.addPage();
       yPosition = 20;
@@ -525,7 +500,6 @@ const createPDFReport = async (reportData: any, includeCharts: boolean): Promise
     yPosition = (doc as any).lastAutoTable.finalY + 15;
   }
   
-  // Add AI summary if available
   if (reportData.summary) {
     doc.addPage();
     
@@ -537,14 +511,11 @@ const createPDFReport = async (reportData: any, includeCharts: boolean): Promise
     doc.text(splitText, 14, 35);
   }
   
-  // Convert to blob and return
   return doc.output('blob');
 };
 
-// Sync cycle data with Google Calendar
 export const syncWithGoogleCalendar = async (calendarId: string, accessToken: string): Promise<boolean> => {
   try {
-    // Get the user's next predicted cycle start date
     const { data: userData, error: userError } = await supabase.auth.getUser();
     if (userError) throw userError;
     
@@ -560,7 +531,6 @@ export const syncWithGoogleCalendar = async (calendarId: string, accessToken: st
     if (cycleError) throw cycleError;
     if (!cycleData?.next_predicted_date) return false;
     
-    // Create Google Calendar event
     const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events`, {
       method: 'POST',
       headers: {
@@ -577,10 +547,10 @@ export const syncWithGoogleCalendar = async (calendarId: string, accessToken: st
           date: format(new Date(new Date(cycleData.next_predicted_date).getTime() + 
             (cycleData.average_period_length || 5) * 24 * 60 * 60 * 1000), 'yyyy-MM-dd')
         },
-        colorId: '11', // Red color
+        colorId: '11',
         reminders: {
           useDefault: false,
-          overrides: [{ method: 'popup', minutes: 24 * 60 }] // 1 day before
+          overrides: [{ method: 'popup', minutes: 24 * 60 }]
         }
       })
     });
