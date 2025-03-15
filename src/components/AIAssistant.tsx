@@ -68,10 +68,14 @@ const AIAssistant = () => {
         if (error) throw error;
         
         if (data && data.length > 0) {
-          setChatSessions(data.map(session => ({
-            ...session,
-            messages: JSON.parse(session.messages as unknown as string)
-          })));
+          const typedSessions: ChatSession[] = data.map(session => ({
+            id: session.id,
+            title: session.title,
+            messages: JSON.parse(session.messages as string) as Message[],
+            created_at: session.created_at,
+            updated_at: session.updated_at
+          }));
+          setChatSessions(typedSessions);
         }
       } catch (error) {
         console.error('Error loading chat sessions:', error);
