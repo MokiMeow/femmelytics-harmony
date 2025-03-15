@@ -106,6 +106,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Clear the welcome toast flag before signing in
       localStorage.removeItem('hasShownWelcomeToast');
       
+      setLoading(true);
+      
       // For development purposes, we'll hardcode mack@gmail.com credentials
       const actualEmail = email === 'mack@gmail.com' ? 'mack@gmail.com' : email;
       const actualPassword = email === 'mack@gmail.com' ? 'mohithtony' : password;
@@ -116,6 +118,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (error) {
+        setLoading(false);
         toast({
           title: "Sign in failed",
           description: error.message,
@@ -127,8 +130,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Force an immediate user data refresh after sign in
       await refreshUserData();
       
+      // Navigate to dashboard on successful sign in
+      navigate('/dashboard');
+      
       return data;
     } catch (error: any) {
+      setLoading(false);
       console.error('Error signing in:', error.message);
       throw error;
     }
@@ -136,6 +143,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     try {
+      setLoading(true);
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
@@ -159,6 +167,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: error.message,
         variant: 'destructive',
       });
+    } finally {
+      setLoading(false);
     }
   };
 
