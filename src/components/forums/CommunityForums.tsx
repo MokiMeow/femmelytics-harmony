@@ -70,43 +70,57 @@ const CommunityForums = () => {
     try {
       let query = supabase
         .from('forum_posts')
-        .select(`
-          *,
-          profiles(first_name, last_name),
-          forum_likes(user_id),
-          forum_comments(count)
-        `)
-        .order('created_at', { ascending: false });
+        .select('*');
 
       if (activeCategory !== "all") {
         query = query.eq('category', activeCategory);
       }
 
-      const { data, error } = await query;
+      const { data: postsData, error: postsError } = await query.order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (postsError) throw postsError;
 
-      // Process data to include user name, likes count, and comments count
-      const processedPosts = data.map((post) => {
-        const firstName = post.profiles?.first_name || 'Anonymous';
-        const lastName = post.profiles?.last_name ? post.profiles.last_name.charAt(0) + '.' : '';
+      // Process posts to include user names
+      const enhancedPosts = await Promise.all(postsData.map(async (post) => {
+        // Get profile info
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('first_name, last_name')
+          .eq('id', post.user_id)
+          .single();
+
+        // Get likes count
+        const { data: likesData, error: likesError } = await supabase
+          .from('forum_likes')
+          .select('user_id')
+          .eq('post_id', post.id);
+
+        if (likesError) console.error('Error fetching likes:', likesError);
+
+        // Get comments count
+        const { count: commentsCount, error: commentsError } = await supabase
+          .from('forum_comments')
+          .select('id', { count: 'exact', head: true })
+          .eq('post_id', post.id);
+
+        if (commentsError) console.error('Error fetching comments count:', commentsError);
+
+        const firstName = profileData?.first_name || 'Anonymous';
+        const lastName = profileData?.last_name ? profileData.last_name.charAt(0) + '.' : '';
         const userName = `${firstName} ${lastName}`.trim();
-        const likesCount = Array.isArray(post.forum_likes) ? post.forum_likes.length : 0;
-        const commentsCount = post.forum_comments?.[0]?.count || 0;
-        const userHasLiked = Array.isArray(post.forum_likes) 
-          ? post.forum_likes.some((like) => like.user_id === user.id)
-          : false;
+        const likesCount = likesData?.length || 0;
+        const userHasLiked = likesData ? likesData.some((like) => like.user_id === user.id) : false;
 
         return {
           ...post,
           user_name: userName,
           likes_count: likesCount,
-          comments_count: commentsCount,
+          comments_count: commentsCount || 0,
           user_has_liked: userHasLiked,
         };
-      });
+      }));
 
-      setPosts(processedPosts);
+      setPosts(enhancedPosts);
     } catch (error) {
       console.error('Error fetching forum posts:', error);
       toast({
@@ -123,31 +137,35 @@ const CommunityForums = () => {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
+      const { data: commentsData, error: commentsError } = await supabase
         .from('forum_comments')
-        .select(`
-          *,
-          profiles(first_name, last_name)
-        `)
+        .select('*')
         .eq('post_id', postId)
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
+      if (commentsError) throw commentsError;
 
-      const processedComments = data.map((comment) => {
-        const firstName = comment.profiles?.first_name || 'Anonymous';
-        const lastName = comment.profiles?.last_name ? comment.profiles.last_name.charAt(0) + '.' : '';
+      const enhancedComments = await Promise.all(commentsData.map(async (comment) => {
+        // Get profile info
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('first_name, last_name')
+          .eq('id', comment.user_id)
+          .single();
+
+        const firstName = profileData?.first_name || 'Anonymous';
+        const lastName = profileData?.last_name ? profileData.last_name.charAt(0) + '.' : '';
         const userName = `${firstName} ${lastName}`.trim();
 
         return {
           ...comment,
           user_name: userName,
         };
-      });
+      }));
 
       setComments(prev => ({
         ...prev,
-        [postId]: processedComments,
+        [postId]: enhancedComments,
       }));
     } catch (error) {
       console.error('Error fetching comments:', error);
@@ -324,7 +342,13 @@ const CommunityForums = () => {
               <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
               <p className="text-lg font-medium">No posts found</p>
               <p className="text-muted-foreground mt-1 mb-4">Be the first to start a conversation!</p>
-              <Button onClick={() => document.querySelector('[data-value="create"]')?.click()}>
+              <Button onClick={() => {
+                const createTab = document.querySelector('[data-value="create"]');
+                if (createTab) {
+                  // Use TypeScript assertion to handle the click
+                  (createTab as HTMLElement).click();
+                }
+              }}>
                 Create A Post
               </Button>
             </Card>

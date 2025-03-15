@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Book, Search, BookOpen, Bookmark, CalendarDays } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -224,30 +224,35 @@ const HealthArticleLibrary = () => {
               </Button>
             ))}
             <Dialog>
-              <Dialog
-                content={
-                  <div className="flex flex-wrap gap-2 p-4">
-                    {CATEGORIES.map((category) => (
-                      <Button
-                        key={category}
-                        variant={selectedCategory === category ? "default" : "outline"}
-                        className="rounded-full" 
-                        size="sm"
-                        onClick={() => {
-                          setSelectedCategory(category === selectedCategory ? null : category);
-                          document.querySelector('[role="dialog"]')?.setAttribute("data-state", "closed");
-                        }}
-                      >
-                        {category}
-                      </Button>
-                    ))}
-                  </div>
-                }
-              >
+              <DialogTrigger asChild>
                 <Button variant="outline" className="rounded-full h-10" size="sm">
                   More...
                 </Button>
-              </Dialog>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Categories</DialogTitle>
+                  <DialogDescription>
+                    Select a category to filter articles
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="flex flex-wrap gap-2 p-4">
+                  {CATEGORIES.map((category) => (
+                    <Button
+                      key={category}
+                      variant={selectedCategory === category ? "default" : "outline"}
+                      className="rounded-full"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedCategory(category === selectedCategory ? null : category);
+                        document.querySelector('[role="dialog"]')?.setAttribute("data-state", "closed");
+                      }}
+                    >
+                      {category}
+                    </Button>
+                  ))}
+                </div>
+              </DialogContent>
             </Dialog>
           </div>
         </div>
@@ -337,7 +342,12 @@ const HealthArticleLibrary = () => {
               <p className="text-muted-foreground mt-1 mb-4">
                 Bookmark articles to save them for later reading
               </p>
-              <Button onClick={() => document.querySelector('[data-value="all"]')?.click()}>
+              <Button onClick={() => {
+                const allTab = document.querySelector('[data-value="all"]');
+                if (allTab) {
+                  (allTab as HTMLElement).click();
+                }
+              }}>
                 Browse Articles
               </Button>
             </Card>
