@@ -8,7 +8,6 @@ import { Menu, Book, MessageSquare, Library, Pill } from 'lucide-react';
 import { useMobile } from '@/hooks/useMobile';
 import UserNavigation from './UserNavigation';
 import { ThemeToggle } from './ThemeToggle';
-import Notifications from './Notifications';
 import { 
   NavigationMenu,
   NavigationMenuContent,
@@ -124,43 +123,45 @@ const Navigation = () => {
               ))}
               
               {user && (
-                <NavigationMenu>
-                  <NavigationMenuList>
-                    <NavigationMenuItem>
-                      <NavigationMenuTrigger className="text-sm font-medium text-muted-foreground hover:text-primary">
-                        Health Resources
-                      </NavigationMenuTrigger>
-                      <NavigationMenuContent>
-                        <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px] z-50">
-                          {healthLinks.map((link) => (
-                            <li key={link.name}>
-                              <NavigationMenuLink asChild>
-                                <Link
-                                  to={link.path}
-                                  className={cn(
-                                    "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-                                    pathname === link.path ? "bg-accent text-accent-foreground" : ""
-                                  )}
-                                >
-                                  <div className="flex items-center gap-2 text-sm font-medium leading-none">
-                                    {link.icon}
-                                    {link.name}
-                                  </div>
-                                  <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                                    {link.name === 'Health Journal' && 'Track symptoms, mood, and health patterns'}
-                                    {link.name === 'Community Forums' && 'Connect with others and share experiences'}
-                                    {link.name === 'Health Library' && 'Access expert-reviewed health articles'}
-                                    {link.name === 'Medication Tracking' && 'Manage medication schedules and refills'}
-                                  </p>
-                                </Link>
-                              </NavigationMenuLink>
-                            </li>
-                          ))}
-                        </ul>
-                      </NavigationMenuContent>
-                    </NavigationMenuItem>
-                  </NavigationMenuList>
-                </NavigationMenu>
+                <div className="relative z-[100]">
+                  <NavigationMenu>
+                    <NavigationMenuList>
+                      <NavigationMenuItem>
+                        <NavigationMenuTrigger className="text-sm font-medium text-muted-foreground hover:text-primary">
+                          Health Resources
+                        </NavigationMenuTrigger>
+                        <NavigationMenuContent>
+                          <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
+                            {healthLinks.map((link) => (
+                              <li key={link.name} className="relative">
+                                <NavigationMenuLink asChild>
+                                  <Link
+                                    to={link.path}
+                                    className={cn(
+                                      "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
+                                      pathname === link.path ? "bg-accent text-accent-foreground" : ""
+                                    )}
+                                  >
+                                    <div className="flex items-center gap-2 text-sm font-medium leading-none">
+                                      {link.icon}
+                                      {link.name}
+                                    </div>
+                                    <p className="line-clamp-2 text-sm leading-snug text-muted-foreground mt-1">
+                                      {link.name === 'Health Journal' && 'Track symptoms, mood, and health patterns'}
+                                      {link.name === 'Community Forums' && 'Connect with others and share experiences'}
+                                      {link.name === 'Health Library' && 'Access expert-reviewed health articles'}
+                                      {link.name === 'Medication Tracking' && 'Manage medication schedules and refills'}
+                                    </p>
+                                  </Link>
+                                </NavigationMenuLink>
+                              </li>
+                            ))}
+                          </ul>
+                        </NavigationMenuContent>
+                      </NavigationMenuItem>
+                    </NavigationMenuList>
+                  </NavigationMenu>
+                </div>
               )}
             </nav>
             <div className="flex items-center gap-4">
