@@ -329,6 +329,7 @@ export type Database = {
           created_at: string
           id: string
           medication_id: string
+          notes: string | null
           taken: boolean
           taken_at: string | null
           user_id: string
@@ -337,6 +338,7 @@ export type Database = {
           created_at?: string
           id?: string
           medication_id: string
+          notes?: string | null
           taken?: boolean
           taken_at?: string | null
           user_id: string
@@ -345,6 +347,7 @@ export type Database = {
           created_at?: string
           id?: string
           medication_id?: string
+          notes?: string | null
           taken?: boolean
           taken_at?: string | null
           user_id?: string
@@ -361,6 +364,7 @@ export type Database = {
       }
       medications: {
         Row: {
+          active: boolean | null
           created_at: string
           dosage: string
           end_date: string | null
@@ -374,6 +378,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          active?: boolean | null
           created_at?: string
           dosage: string
           end_date?: string | null
@@ -387,6 +392,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          active?: boolean | null
           created_at?: string
           dosage?: string
           end_date?: string | null
