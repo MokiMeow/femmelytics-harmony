@@ -20,6 +20,9 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  optimizeDeps: {
+    include: ['zod', '@hookform/resolvers/zod'],
+  },
   build: {
     // Add timestamp to assets for cache busting
     assetsDir: `assets_${buildId}`,
