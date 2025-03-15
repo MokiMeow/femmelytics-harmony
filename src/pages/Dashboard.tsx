@@ -1,13 +1,12 @@
-
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Activity, Heart, BarChart3, LineChart, TrendingUp, MoreHorizontal, Filter, Info, Droplet, Moon, Clock, AlertCircle, Star } from 'lucide-react';
+import { Calendar, Activity, Heart, BarChart3, LineChart as LucideLineChart, TrendingUp, MoreHorizontal, Filter, Info, Droplet, Moon, Clock, AlertCircle, Star, Thermometer } from 'lucide-react';
 import Navigation from '@/components/Navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { cn } from '@/lib/utils';
 
 // Mock data for visualizations
@@ -520,7 +519,7 @@ const Dashboard = () => {
                       <YAxis domain={[1, 5]} />
                       <Tooltip 
                         contentStyle={{ backgroundColor: 'white', borderRadius: '0.5rem', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                        formatter={(value) => [`${value.toFixed(1)}`, "Average Mood"]}
+                        formatter={(value: number) => [`${value.toFixed(1)}`, "Average Mood"]}
                       />
                       <Line 
                         type="monotone" 
@@ -670,3 +669,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
