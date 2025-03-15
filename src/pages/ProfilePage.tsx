@@ -4,11 +4,16 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { ArrowLeft, Save, User } from 'lucide-react';
+import { ArrowLeft, Save, User, Mail, Calendar, Shield, Settings, Clock } from 'lucide-react';
 import { Link } from "react-router-dom";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
+import { format } from 'date-fns';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 const ProfilePage = () => {
   const { user } = useAuth();
@@ -84,91 +89,196 @@ const ProfilePage = () => {
     }
   };
 
+  const getInitials = () => {
+    if (firstName && lastName) {
+      return `${firstName[0]}${lastName[0]}`.toUpperCase();
+    } else if (firstName) {
+      return firstName[0].toUpperCase();
+    } else if (user?.email) {
+      return user.email[0].toUpperCase();
+    }
+    return "U";
+  };
+
   return (
-    <div className="container mx-auto py-8 max-w-3xl">
-      <div className="mb-6">
-        <Link to="/dashboard" className="inline-flex items-center text-primary hover:underline">
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Back to Dashboard
-        </Link>
+    <div className="container mx-auto py-8 max-w-5xl">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center">
+          <Link to="/dashboard" className="inline-flex items-center text-primary hover:underline mr-4">
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Back to Dashboard
+          </Link>
+          <h1 className="text-2xl font-bold">Your Profile</h1>
+        </div>
+        <ThemeToggle />
       </div>
       
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-4">
-            <div className="bg-lavender-100 p-3 rounded-full">
-              <User className="h-8 w-8 text-lavender-600" />
-            </div>
-            <div>
-              <CardTitle>Your Profile</CardTitle>
-              <CardDescription>Update your personal information</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
-            {profileLoading ? (
-              <div className="py-6 flex justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {/* Sidebar with Avatar */}
+        <div className="md:col-span-1">
+          <Card className="bg-gradient-to-b from-lavender-50 to-background dark:from-lavender-900/30 dark:to-background">
+            <CardContent className="pt-6 flex flex-col items-center">
+              <Avatar className="h-24 w-24 border-4 border-white dark:border-gray-800 shadow-lg">
+                <AvatarImage src={user?.user_metadata?.avatar_url || ''} alt="Profile" />
+                <AvatarFallback className="bg-lavender-200 text-lavender-600 dark:bg-lavender-800 dark:text-lavender-200 text-xl">
+                  {getInitials()}
+                </AvatarFallback>
+              </Avatar>
+              <h2 className="mt-4 text-xl font-semibold text-center">
+                {firstName && lastName 
+                  ? `${firstName} ${lastName}`
+                  : user?.email?.split('@')[0] || 'User'}
+              </h2>
+              <p className="text-sm text-muted-foreground text-center mt-1">{user?.email}</p>
+              
+              <Separator className="my-6" />
+              
+              <div className="w-full space-y-4">
+                <div className="flex items-center p-2 rounded-md hover:bg-muted cursor-pointer transition-colors">
+                  <Shield className="h-4 w-4 mr-3 text-lavender-500" />
+                  <span className="text-sm">Security</span>
+                </div>
+                <div className="flex items-center p-2 rounded-md hover:bg-muted cursor-pointer transition-colors">
+                  <Settings className="h-4 w-4 mr-3 text-lavender-500" />
+                  <span className="text-sm">Preferences</span>
+                </div>
               </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="firstName">First Name</Label>
-                    <Input 
-                      id="firstName" 
-                      value={firstName} 
-                      onChange={(e) => setFirstName(e.target.value)} 
-                      placeholder="Enter your first name"
-                    />
+            </CardContent>
+          </Card>
+        </div>
+        
+        {/* Main Content */}
+        <div className="md:col-span-3">
+          <Tabs defaultValue="personal" className="w-full">
+            <TabsList className="mb-6">
+              <TabsTrigger value="personal">Personal Info</TabsTrigger>
+              <TabsTrigger value="activity">Recent Activity</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="personal">
+              <Card>
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center">
+                    <User className="h-5 w-5 mr-2 text-lavender-500" />
+                    Personal Information
+                  </CardTitle>
+                  <CardDescription>
+                    Update your personal information and account settings
+                  </CardDescription>
+                </CardHeader>
+                <form onSubmit={handleSubmit}>
+                  <CardContent className="space-y-4">
+                    {profileLoading ? (
+                      <div className="py-6 flex justify-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="firstName">First Name</Label>
+                            <Input 
+                              id="firstName" 
+                              value={firstName} 
+                              onChange={(e) => setFirstName(e.target.value)} 
+                              placeholder="Enter your first name"
+                              className="bg-muted/50 focus:bg-background dark:focus:bg-muted transition-colors"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="lastName">Last Name</Label>
+                            <Input 
+                              id="lastName" 
+                              value={lastName} 
+                              onChange={(e) => setLastName(e.target.value)} 
+                              placeholder="Enter your last name"
+                              className="bg-muted/50 focus:bg-background dark:focus:bg-muted transition-colors"
+                            />
+                          </div>
+                        </div>
+                        
+                        <Separator />
+                        
+                        <div className="space-y-2">
+                          <Label>Email Address</Label>
+                          <div className="flex items-center p-3 bg-muted/50 rounded-md">
+                            <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
+                            <span>{user?.email}</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Your email address is used for login and cannot be changed.
+                          </p>
+                        </div>
+                        
+                        <div className="flex items-center gap-3 p-3 bg-lavender-50 dark:bg-lavender-900/20 rounded-md border border-lavender-200 dark:border-lavender-800">
+                          <div className="p-2 bg-lavender-100 dark:bg-lavender-800 rounded-full">
+                            <Calendar className="h-4 w-4 text-lavender-600 dark:text-lavender-300" />
+                          </div>
+                          <div>
+                            <div className="text-sm font-medium">Account Created</div>
+                            <div className="text-sm text-muted-foreground">
+                              {user?.created_at ? format(new Date(user.created_at), 'PPP') : 'N/A'}
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </CardContent>
+                  <CardFooter className="border-t pt-6">
+                    <Button 
+                      type="submit" 
+                      disabled={loading || profileLoading} 
+                      className="bg-lavender-600 hover:bg-lavender-700 dark:bg-lavender-600 dark:hover:bg-lavender-700"
+                    >
+                      {loading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          Save Changes
+                        </>
+                      )}
+                    </Button>
+                  </CardFooter>
+                </form>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="activity">
+              <Card>
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center">
+                    <Clock className="h-5 w-5 mr-2 text-lavender-500" />
+                    Recent Activity
+                  </CardTitle>
+                  <CardDescription>
+                    View your recent account activity and changes
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="relative pl-6 border-l border-muted space-y-4">
+                    {[
+                      { action: "Profile updated", date: "Today", time: "10:30 AM" },
+                      { action: "Logged into account", date: "Today", time: "9:45 AM" },
+                      { action: "Added new cycle data", date: "Yesterday", time: "3:20 PM" },
+                      { action: "Updated mood information", date: "Last week", time: "2:15 PM" },
+                    ].map((item, index) => (
+                      <div key={index} className="relative pb-4">
+                        <div className="absolute -left-[29px] h-3 w-3 rounded-full bg-lavender-300 dark:bg-lavender-600 border-4 border-background dark:border-card"></div>
+                        <p className="font-medium">{item.action}</p>
+                        <p className="text-sm text-muted-foreground">{item.date} at {item.time}</p>
+                      </div>
+                    ))}
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lastName">Last Name</Label>
-                    <Input 
-                      id="lastName" 
-                      value={lastName} 
-                      onChange={(e) => setLastName(e.target.value)} 
-                      placeholder="Enter your last name"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input 
-                    id="email" 
-                    value={user?.email || ""} 
-                    disabled 
-                    className="bg-gray-50"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Email address cannot be changed.
-                  </p>
-                </div>
-              </>
-            )}
-          </CardContent>
-          <CardFooter>
-            <Button 
-              type="submit" 
-              disabled={loading || profileLoading} 
-              className="w-full md:w-auto"
-            >
-              {loading ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Save Changes
-                </>
-              )}
-            </Button>
-          </CardFooter>
-        </form>
-      </Card>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
     </div>
   );
 };

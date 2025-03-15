@@ -46,6 +46,10 @@ const Notifications = () => {
           return;
         }
         
+        // Check local storage for read notifications
+        const readNotificationsString = localStorage.getItem(`${user.id}_read_notifications`);
+        const readNotifications = readNotificationsString ? JSON.parse(readNotificationsString) : [];
+        
         let tempNotifications: Notification[] = [];
         
         // Add period prediction notification if available
@@ -59,7 +63,7 @@ const Notifications = () => {
               title: 'Period Coming Soon',
               message: `Your period is predicted to start in ${daysUntil === 0 ? 'today' : daysUntil === 1 ? 'tomorrow' : `${daysUntil} days`}. Consider stocking up on supplies.`,
               date: new Date().toISOString(),
-              read: false
+              read: readNotifications.includes('period-prediction')
             });
           } else if (daysUntil === -1) {
             tempNotifications.push({
@@ -67,7 +71,7 @@ const Notifications = () => {
               title: 'Period Predicted Today',
               message: 'Your period is predicted to have started today. Track your flow to improve future predictions.',
               date: new Date().toISOString(),
-              read: false
+              read: readNotifications.includes('period-started')
             });
           }
         }
@@ -86,7 +90,7 @@ const Notifications = () => {
             title: 'Welcome to Femmelytics',
             message: 'Track your first cycle to get personalized insights.',
             date: new Date().toISOString(),
-            read: false
+            read: readNotifications.includes('welcome')
           });
         }
         
@@ -96,7 +100,7 @@ const Notifications = () => {
           title: 'Chat with Luna',
           message: 'Need advice or information? Chat with Luna, your AI health assistant.',
           date: new Date().toISOString(),
-          read: false
+          read: readNotifications.includes('luna-chat')
         });
         
         setNotifications(tempNotifications);
@@ -113,7 +117,36 @@ const Notifications = () => {
     return () => clearInterval(interval);
   }, [user]);
 
+  // Mark all notifications as read when dropdown is opened
+  useEffect(() => {
+    if (isOpen && unreadCount > 0 && user) {
+      // Get IDs of all notifications
+      const allIds = notifications.map(n => n.id);
+      
+      // Update localStorage with read notification IDs
+      localStorage.setItem(`${user.id}_read_notifications`, JSON.stringify(allIds));
+      
+      // Update state
+      setNotifications(prev => 
+        prev.map(notification => ({ ...notification, read: true }))
+      );
+      setUnreadCount(0);
+    }
+  }, [isOpen, unreadCount, notifications, user]);
+
   const markAsRead = (id: string) => {
+    if (!user) return;
+    
+    // Get current read notifications from localStorage
+    const readNotificationsString = localStorage.getItem(`${user.id}_read_notifications`);
+    const readNotifications = readNotificationsString ? JSON.parse(readNotificationsString) : [];
+    
+    // Add this ID if not already present
+    if (!readNotifications.includes(id)) {
+      readNotifications.push(id);
+      localStorage.setItem(`${user.id}_read_notifications`, JSON.stringify(readNotifications));
+    }
+    
     setNotifications(prev => 
       prev.map(notification => 
         notification.id === id 
@@ -125,6 +158,14 @@ const Notifications = () => {
   };
 
   const markAllAsRead = () => {
+    if (!user) return;
+    
+    // Get all notification IDs
+    const allIds = notifications.map(n => n.id);
+    
+    // Save to localStorage
+    localStorage.setItem(`${user.id}_read_notifications`, JSON.stringify(allIds));
+    
     setNotifications(prev => 
       prev.map(notification => ({ ...notification, read: true }))
     );
@@ -163,7 +204,7 @@ const Notifications = () => {
             notifications.map((notification) => (
               <DropdownMenuItem 
                 key={notification.id}
-                className={`cursor-pointer p-3 ${!notification.read ? 'bg-lavender-50' : ''}`}
+                className={`cursor-pointer p-3 ${!notification.read ? 'bg-lavender-50 dark:bg-lavender-900/30' : ''}`}
                 onClick={() => markAsRead(notification.id)}
               >
                 <div className="flex flex-col gap-1">

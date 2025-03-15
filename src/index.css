@@ -37,6 +37,36 @@
     
     --radius: 1rem;
   }
+
+  .dark {
+    --background: 280 15% 10%;
+    --foreground: 280 10% 90%;
+    
+    --card: 280 15% 15%;
+    --card-foreground: 280 10% 90%;
+    
+    --popover: 280 15% 15%;
+    --popover-foreground: 280 10% 90%;
+    
+    --primary: 265 83% 45%;
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 170 75% 41%;
+    --secondary-foreground: 0 0% 100%;
+    
+    --muted: 280 15% 20%;
+    --muted-foreground: 280 5% 65%;
+    
+    --accent: 350 89% 60%;
+    --accent-foreground: 0 0% 100%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 280 15% 25%;
+    --input: 280 15% 25%;
+    --ring: 265 83% 45%;
+  }
  
   * {
     @apply border-border;
@@ -67,7 +97,7 @@
 @layer components {
   /* Glass Card Effect */
   .glass-card {
-    @apply bg-white/70 backdrop-blur-lg border border-white/30 shadow-lg;
+    @apply bg-white/70 backdrop-blur-lg border border-white/30 shadow-lg dark:bg-black/40 dark:border-white/10;
   }
   
   /* Pill Tag Style */

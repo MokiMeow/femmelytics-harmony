@@ -2,6 +2,7 @@
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
+import { ThemeProvider } from './components/ThemeProvider'
 
 // Force a hard refresh if the application has been updated
 if ('serviceWorker' in navigator) {
@@ -20,7 +21,11 @@ console.log(`App initializing, build: ${timestamp}`);
 document.addEventListener('DOMContentLoaded', () => {
   const rootElement = document.getElementById("root");
   if (rootElement) {
-    createRoot(rootElement).render(<App />);
+    createRoot(rootElement).render(
+      <ThemeProvider defaultTheme="system">
+        <App />
+      </ThemeProvider>
+    );
   } else {
     console.error("Root element not found");
   }
