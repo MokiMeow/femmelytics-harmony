@@ -1,22 +1,28 @@
+
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, X } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { useMobile } from '@/hooks/useMobile';
 import UserNavigation from './UserNavigation';
 
 const Navigation = () => {
   const { pathname } = useLocation();
+  const { user } = useAuth();
   const isMobile = useMobile();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const navLinks = [
+  // Define navigation links based on authentication status
+  const navLinks = user ? [
     { name: 'Home', path: '/' },
     { name: 'Dashboard', path: '/dashboard' },
     { name: 'Track', path: '/track' },
     { name: 'Chat with Luna', path: '/chat' },
+    { name: 'About', path: '/about' },
+  ] : [
+    { name: 'Home', path: '/' },
     { name: 'About', path: '/about' },
   ];
 
@@ -25,9 +31,9 @@ const Navigation = () => {
   };
 
   return (
-    <header className="bg-background py-4 shadow-sm fixed top-0 left-0 w-full z-50">
+    <header className="bg-background/80 backdrop-blur-sm py-4 shadow-sm fixed top-0 left-0 w-full z-50">
       <div className="container mx-auto px-4 flex items-center justify-between">
-        <Link to="/" className="text-2xl font-bold text-primary">
+        <Link to="/" className="text-2xl font-bold bg-gradient-to-r from-primary to-purple-600 text-transparent bg-clip-text">
           Femmelytics
         </Link>
 

@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Calendar, Sparkles, Shield, BarChart, Activity, CheckCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Navigation from '@/components/Navigation';
-import { fadeInUp } from '@/utils/animations';
+import { fadeInUp, staggerContainer } from '@/utils/animations';
 import Card from '@/components/Card';
 import { Button } from '@/components/ui/button';
 
@@ -59,12 +59,22 @@ const Index = () => {
       <Navigation />
       
       {/* Hero Section */}
-      <section className="pt-32 pb-16 md:pt-40 md:pb-24">
+      <section className="pt-32 pb-16 md:pt-40 md:pb-24 bg-gradient-to-b from-background via-purple-50/30 to-background">
         <div className="container px-4 md:px-6">
-          <div className="text-center max-w-3xl mx-auto">
+          <motion.div 
+            variants={staggerContainer}
+            initial="initial"
+            animate="animate"
+            className="text-center max-w-3xl mx-auto"
+          >
+            <motion.div variants={fadeInUp} className="mb-6 inline-block">
+              <span className="inline-block bg-primary/10 text-primary font-medium rounded-full px-4 py-1 text-sm mb-4">
+                Women's Health Tracking
+              </span>
+            </motion.div>
             <motion.h1 
               variants={fadeInUp}
-              className="text-4xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-lavender-600 to-primary text-transparent bg-clip-text"
+              className="text-4xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-violet-600 via-primary to-purple-600 text-transparent bg-clip-text leading-tight"
             >
               Track Your Cycle, Transform Your Life
             </motion.h1>
@@ -79,17 +89,21 @@ const Index = () => {
               className="mt-8 flex flex-col sm:flex-row gap-4 justify-center"
             >
               <Link to="/auth?tab=signup">
-                <Button size="lg" className="w-full sm:w-auto">
+                <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90">
                   Create Free Account
                 </Button>
               </Link>
               <Link to="/about">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto border-primary text-primary hover:bg-primary/10">
                   Learn More
                 </Button>
               </Link>
             </motion.div>
-          </div>
+          </motion.div>
+          
+          {/* Decorative elements */}
+          <div className="absolute -z-10 top-1/3 left-1/4 w-72 h-72 bg-purple-300/10 rounded-full blur-3xl"></div>
+          <div className="absolute -z-10 top-1/4 right-1/4 w-96 h-96 bg-lavender-400/10 rounded-full blur-3xl"></div>
         </div>
       </section>
       
@@ -160,9 +174,11 @@ const Index = () => {
                 ))}
               </ul>
               
-              <Link to="/dashboard" className="premium-button bg-lavender-500 text-white mt-8 inline-flex items-center">
-                <span>View Dashboard</span>
-                <ArrowRight className="ml-2 h-4 w-4" />
+              <Link to="/dashboard" className="mt-8 inline-flex items-center">
+                <Button className="bg-gradient-to-r from-lavender-500 to-primary">
+                  <span>View Dashboard</span>
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
               </Link>
             </motion.div>
             
@@ -173,32 +189,19 @@ const Index = () => {
               viewport={{ once: true }}
               className="relative"
             >
-              <Card className="col-span-2 lg:col-span-1 overflow-hidden flex flex-col sm:flex-row">
-                <div className="sm:w-2/5 p-6 flex flex-col justify-between">
-                  <div>
-                    <h3 className="text-xl font-semibold mb-2">Dashboard Preview</h3>
-                    <p className="text-muted-foreground mb-4">Visualize your patterns and gain insights</p>
-                  </div>
-                  <div>
-                    <Link to="/auth">
-                      <Button variant="outline" className="w-full">Explore</Button>
-                    </Link>
-                  </div>
-                </div>
-                <div className="sm:w-3/5 bg-muted p-4 flex items-center justify-center">
-                  <img 
-                    src="/dashboard-preview.png" 
-                    alt="Dashboard Preview" 
-                    className="rounded-md shadow-md max-w-full h-auto object-cover"
-                  />
-                </div>
+              <Card className="col-span-2 lg:col-span-1 overflow-hidden p-4 border-2 border-lavender-100 bg-white/80 backdrop-blur-sm shadow-xl rounded-xl">
+                <img 
+                  src="/lovable-uploads/d687e40f-ad20-4eb4-b607-3fa4130517db.png" 
+                  alt="Dashboard Preview" 
+                  className="rounded-lg shadow-lg w-full h-auto"
+                />
               </Card>
               
               {/* Float elements */}
-              <div className="absolute -top-8 -right-8 bg-white rounded-xl shadow-lg p-4 animate-float">
+              <div className="absolute -top-8 -right-8 bg-white rounded-xl shadow-lg p-4 animate-float hidden md:block">
                 <Activity className="h-6 w-6 text-coral-500" />
               </div>
-              <div className="absolute -bottom-6 -left-6 bg-white rounded-xl shadow-lg p-4 animate-float animation-delay-2">
+              <div className="absolute -bottom-6 -left-6 bg-white rounded-xl shadow-lg p-4 animate-float animation-delay-2 hidden md:block">
                 <BarChart className="h-6 w-6 text-lavender-500" />
               </div>
             </motion.div>
@@ -245,7 +248,7 @@ const Index = () => {
       {/* CTA Section */}
       <section className="py-16 md:py-24">
         <div className="container px-4 md:px-6">
-          <div className="bg-gradient-to-r from-lavender-500 to-teal-500 rounded-3xl p-8 md:p-12 overflow-hidden relative">
+          <div className="bg-gradient-to-r from-lavender-500 to-primary rounded-3xl p-8 md:p-12 overflow-hidden relative">
             <div className="absolute inset-0 bg-pattern opacity-10"></div>
             
             <div className="max-w-2xl relative">
@@ -257,11 +260,15 @@ const Index = () => {
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/auth?tab=signup" className="premium-button bg-white text-primary hover:bg-white/90">
-                  Create Free Account
+                <Link to="/auth?tab=signup">
+                  <Button className="bg-white text-primary hover:bg-white/90">
+                    Create Free Account
+                  </Button>
                 </Link>
-                <Link to="/about" className="premium-button bg-white/20 text-white hover:bg-white/30">
-                  Learn More
+                <Link to="/about">
+                  <Button variant="outline" className="bg-white/20 text-white hover:bg-white/30 border-white">
+                    Learn More
+                  </Button>
                 </Link>
               </div>
             </div>
@@ -275,9 +282,9 @@ const Index = () => {
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="mb-8 md:mb-0">
               <div className="flex items-center">
-                <div className="rounded-xl bg-gradient-to-br from-lavender-500 to-teal-500 p-2 mr-2">
+                <div className="rounded-xl bg-gradient-to-br from-lavender-500 to-primary p-2 mr-2">
                   <div className="w-6 h-6 bg-white rounded-lg flex items-center justify-center">
-                    <span className="text-lavender-600 font-semibold text-lg">F</span>
+                    <span className="text-primary font-semibold text-lg">F</span>
                   </div>
                 </div>
                 <span className="font-semibold text-xl tracking-tight">Femmelytics</span>

@@ -35,3 +35,28 @@ export const slideIn: Variants = {
     transition: { duration: 0.5 }
   }
 };
+
+export const float: Variants = {
+  initial: { y: 0 },
+  animate: {
+    y: [0, -10, 0],
+    transition: {
+      duration: 3,
+      repeat: Infinity,
+      repeatType: "loop",
+      ease: "easeInOut"
+    }
+  }
+};
+
+export const pulse: Variants = {
+  initial: { scale: 1 },
+  animate: {
+    scale: [1, 1.05, 1],
+    transition: {
+      duration: 2,
+      repeat: Infinity,
+      repeatType: "loop"
+    }
+  }
+};
