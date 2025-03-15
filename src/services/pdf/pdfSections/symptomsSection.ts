@@ -53,10 +53,10 @@ export const addSymptomsSection = async (
   yPosition = (doc as any).lastAutoTable.finalY + 20;
   
   if (includeCharts && symptomsData.length > 0) {
-    // Check if we need a page break for the chart
-    const chartPageBreakResult = checkPageBreak(doc, currentPage, 120);
-    yPosition = chartPageBreakResult.newY;
-    currentPage = chartPageBreakResult.currentPage;
+    // Always create a new page for charts
+    doc.addPage();
+    currentPage++;
+    yPosition = 25;
     
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
@@ -75,12 +75,18 @@ export const addSymptomsSection = async (
       
       const pageWidth = doc.internal.pageSize.width;
       const imgWidth = 150;
-      const imgHeight = 80;
-      doc.addImage(chartImgData, 'PNG', (pageWidth - imgWidth) / 2, yPosition, imgWidth, imgHeight);
+      const imgHeight = 100; // Increased height for better visibility
+      const centerX = (pageWidth - imgWidth) / 2;
+      
+      // Add the chart with proper centering and spacing
+      doc.addImage(chartImgData, 'PNG', centerX, yPosition, imgWidth, imgHeight);
       yPosition += imgHeight + 25;
     } catch (error) {
       console.error('Error generating symptom chart:', error);
-      yPosition += 10;
+      doc.setTextColor(255, 0, 0);
+      doc.setFontSize(10);
+      doc.text('Chart generation failed. Please try again.', pageWidth / 2, yPosition + 20, { align: 'center' });
+      yPosition += 30;
     }
   }
   

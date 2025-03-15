@@ -12,15 +12,15 @@ export const addSummarySection = (
     return { yPosition, currentPage };
   }
   
-  // Check if we need a page break before starting summary section
-  const pageBreakResult = checkPageBreak(doc, currentPage, 100);
-  yPosition = pageBreakResult.newY;
-  currentPage = pageBreakResult.currentPage;
+  // Always create a new page for the summary
+  doc.addPage();
+  currentPage++;
+  yPosition = 25;
   
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
   doc.text('Health Summary (AI Generated)', 14, yPosition);
-  yPosition += 10;
+  yPosition += 20; // Increased spacing after title
   
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(11);
@@ -28,11 +28,26 @@ export const addSummarySection = (
   const textMargin = 14;
   const maxWidth = doc.internal.pageSize.width - (textMargin * 2);
   
-  const splitText = (doc as any).splitTextToSize(summary, maxWidth);
-  doc.text(splitText, textMargin, yPosition);
+  // Split summary into paragraphs for better readability
+  const paragraphs = summary.split('\n\n');
+  
+  for (const paragraph of paragraphs) {
+    const splitText = (doc as any).splitTextToSize(paragraph, maxWidth);
+    doc.text(splitText, textMargin, yPosition);
+    yPosition += splitText.length * 6 + 8; // Add more spacing between paragraphs
+  }
+  
+  // Ensure there's enough space for the disclaimer
+  if (yPosition > doc.internal.pageSize.height - 40) {
+    doc.addPage();
+    currentPage++;
+    yPosition = 25;
+  }
+  
+  // Add space before disclaimer
+  yPosition += 10;
   
   // Disclaimer about AI-generated content
-  yPosition += splitText.length * 6 + 10;
   doc.setFont('helvetica', 'italic');
   doc.setFontSize(9);
   doc.setTextColor(100, 100, 100);
