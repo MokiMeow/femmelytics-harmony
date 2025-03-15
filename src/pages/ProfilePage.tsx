@@ -8,14 +8,21 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Save, User, Mail, Calendar, Shield, Settings, Clock, Upload, Camera } from 'lucide-react';
+import { ArrowLeft, Save, User, Mail, Calendar, Shield, Settings, Upload, Camera } from 'lucide-react';
 import { Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import GoogleCalendarIntegration from '@/components/GoogleCalendarIntegration';
 import { v4 as uuidv4 } from 'uuid';
+
+interface Activity {
+  id: string;
+  action: string;
+  date: Date;
+  type: 'profile' | 'cycle' | 'mood' | 'auth' | 'medication';
+}
 
 const ProfilePage = () => {
   const { user } = useAuth();
@@ -27,6 +34,8 @@ const ProfilePage = () => {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isCalendarConnected, setIsCalendarConnected] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(true);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -69,6 +78,109 @@ const ProfilePage = () => {
     
     fetchProfile();
   }, [user, toast]);
+
+  useEffect(() => {
+    const fetchRecentActivity = async () => {
+      if (!user) return;
+      
+      setActivitiesLoading(true);
+      try {
+        // Fetch latest cycle entries
+        const { data: cycleData, error: cycleError } = await supabase
+          .from('cycle_entries')
+          .select('id, created_at')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(2);
+          
+        if (cycleError) {
+          console.error('Error fetching cycle entries:', cycleError);
+        }
+        
+        // Fetch latest mood entries
+        const { data: moodData, error: moodError } = await supabase
+          .from('mood_entries')
+          .select('id, created_at')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(2);
+          
+        if (moodError) {
+          console.error('Error fetching mood entries:', moodError);
+        }
+        
+        // Fetch latest medication log entries
+        const { data: medData, error: medError } = await supabase
+          .from('medication_history')
+          .select('id, created_at')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(2);
+          
+        if (medError) {
+          console.error('Error fetching medication history:', medError);
+        }
+        
+        const activities: Activity[] = [];
+        
+        // Add profile creation activity
+        activities.push({
+          id: 'profile-creation',
+          action: 'Created account',
+          date: new Date(user.created_at || Date.now()),
+          type: 'auth'
+        });
+        
+        // Add cycle entries
+        if (cycleData && cycleData.length > 0) {
+          cycleData.forEach(entry => {
+            activities.push({
+              id: entry.id,
+              action: 'Added cycle data',
+              date: new Date(entry.created_at),
+              type: 'cycle'
+            });
+          });
+        }
+        
+        // Add mood entries
+        if (moodData && moodData.length > 0) {
+          moodData.forEach(entry => {
+            activities.push({
+              id: entry.id,
+              action: 'Tracked mood',
+              date: new Date(entry.created_at),
+              type: 'mood'
+            });
+          });
+        }
+        
+        // Add medication logs
+        if (medData && medData.length > 0) {
+          medData.forEach(entry => {
+            activities.push({
+              id: entry.id,
+              action: 'Logged medication',
+              date: new Date(entry.created_at),
+              type: 'medication'
+            });
+          });
+        }
+        
+        // Sort by date, most recent first
+        activities.sort((a, b) => b.date.getTime() - a.date.getTime());
+        
+        // Take top 5
+        setRecentActivities(activities.slice(0, 5));
+      } catch (error) {
+        console.error('Error fetching activity data:', error);
+      } finally {
+        setActivitiesLoading(false);
+      }
+    };
+    
+    fetchRecentActivity();
+  }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -181,6 +293,23 @@ const ProfilePage = () => {
         description: "Could not update your calendar connection status.",
         variant: "destructive",
       });
+    }
+  };
+
+  const getActivityIcon = (type: string) => {
+    switch (type) {
+      case 'auth':
+        return <User className="h-3 w-3 text-blue-500" />;
+      case 'profile':
+        return <User className="h-3 w-3 text-lavender-500" />;
+      case 'cycle':
+        return <Calendar className="h-3 w-3 text-pink-500" />;
+      case 'mood':
+        return <div className="h-3 w-3 text-yellow-500">😊</div>;
+      case 'medication':
+        return <div className="h-3 w-3 text-green-500">💊</div>;
+      default:
+        return <div className="h-3 w-3 text-gray-500">•</div>;
     }
   };
 
@@ -376,28 +505,40 @@ const ProfilePage = () => {
               <Card>
                 <CardHeader className="pb-4">
                   <CardTitle className="flex items-center">
-                    <Clock className="h-5 w-5 mr-2 text-lavender-500" />
+                    <Calendar className="h-5 w-5 mr-2 text-lavender-500" />
                     Recent Activity
                   </CardTitle>
                   <CardDescription>
-                    View your recent account activity and changes
+                    View your recent account activity
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="relative pl-6 border-l border-muted space-y-4">
-                    {[
-                      { action: "Profile updated", date: "Today", time: "10:30 AM" },
-                      { action: "Logged into account", date: "Today", time: "9:45 AM" },
-                      { action: "Added new cycle data", date: "Yesterday", time: "3:20 PM" },
-                      { action: "Updated mood information", date: "Last week", time: "2:15 PM" },
-                    ].map((item, index) => (
-                      <div key={index} className="relative pb-4">
-                        <div className="absolute -left-[29px] h-3 w-3 rounded-full bg-lavender-300 dark:bg-lavender-600 border-4 border-background dark:border-card"></div>
-                        <p className="font-medium">{item.action}</p>
-                        <p className="text-sm text-muted-foreground">{item.date} at {item.time}</p>
-                      </div>
-                    ))}
-                  </div>
+                  {activitiesLoading ? (
+                    <div className="flex justify-center py-6">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    </div>
+                  ) : recentActivities.length > 0 ? (
+                    <div className="relative pl-6 border-l border-muted space-y-4">
+                      {recentActivities.map((activity) => (
+                        <div key={activity.id} className="relative pb-4">
+                          <div className="absolute -left-[21px] top-1">
+                            <div className="h-5 w-5 rounded-full bg-background dark:bg-card flex items-center justify-center border border-muted">
+                              {getActivityIcon(activity.type)}
+                            </div>
+                          </div>
+                          <p className="font-medium">{activity.action}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {formatDistanceToNow(activity.date, { addSuffix: true })}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-6 text-muted-foreground">
+                      <p>No recent activity found</p>
+                      <p className="text-sm mt-2">Activities will appear here as you use the app</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

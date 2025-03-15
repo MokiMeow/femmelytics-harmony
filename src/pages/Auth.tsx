@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -11,6 +12,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { PieChartIcon, LightbulbIcon, MessageSquareIcon } from '@/components/ui/icons';
 import Navigation from '@/components/Navigation';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { InfoIcon } from 'lucide-react';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -21,6 +24,7 @@ const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') === 'signup' ? 'signup' : 'signin');
+  const [showEmailConfirmAlert, setShowEmailConfirmAlert] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -79,7 +83,15 @@ const Auth = () => {
     setIsLoading(true);
     try {
       const normalizedEmail = email.toLowerCase().trim();
-      await signUp(normalizedEmail, password);
+      const result = await signUp(normalizedEmail, password);
+      
+      if (result) {
+        setShowEmailConfirmAlert(true);
+        toast({
+          title: "Account created",
+          description: "Please check your email to confirm your account.",
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -146,6 +158,16 @@ const Auth = () => {
               </Tabs>
             </CardHeader>
             <CardContent>
+              {showEmailConfirmAlert && activeTab === "signup" && (
+                <Alert className="mb-4 bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800">
+                  <InfoIcon className="h-4 w-4 text-blue-500 dark:text-blue-400" />
+                  <AlertTitle>Check your email</AlertTitle>
+                  <AlertDescription>
+                    We've sent a confirmation link to your email. Please check your inbox and confirm your account.
+                  </AlertDescription>
+                </Alert>
+              )}
+            
               {activeTab === "signin" ? (
                 <form onSubmit={handleSignIn}>
                   <CardContent className="space-y-4 pt-4">

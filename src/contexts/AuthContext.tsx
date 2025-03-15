@@ -37,6 +37,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       async (event, session) => {
         if (session?.user) {
           setUser(session.user);
+          if (event === 'SIGNED_IN') {
+            toast({
+              title: "Welcome back!",
+              description: "You have successfully signed in.",
+            });
+          }
         } else {
           setUser(null);
         }
@@ -57,6 +63,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (error) {
+        toast({
+          title: "Sign up failed",
+          description: error.message,
+          variant: "destructive",
+        });
         throw error;
       }
 
@@ -79,6 +90,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (error) {
+        toast({
+          title: "Sign in failed",
+          description: error.message,
+          variant: "destructive",
+        });
         throw error;
       }
 

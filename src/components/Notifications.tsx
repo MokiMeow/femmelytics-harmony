@@ -48,7 +48,9 @@ const Notifications = () => {
         
         // Check local storage for read notifications
         const readNotificationsString = localStorage.getItem(`${user.id}_read_notifications`);
+        const dismissedNotificationsString = localStorage.getItem(`${user.id}_dismissed_notifications`) || '[]';
         const readNotifications = readNotificationsString ? JSON.parse(readNotificationsString) : [];
+        const dismissedNotifications = JSON.parse(dismissedNotificationsString);
         
         let tempNotifications: Notification[] = [];
         
@@ -57,7 +59,7 @@ const Notifications = () => {
           const predictionDate = parseISO(statsData.next_predicted_date);
           const daysUntil = Math.ceil((predictionDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
           
-          if (daysUntil <= 5 && daysUntil >= 0) {
+          if (daysUntil <= 5 && daysUntil >= 0 && !dismissedNotifications.includes('period-prediction')) {
             tempNotifications.push({
               id: 'period-prediction',
               title: 'Period Coming Soon',
@@ -65,7 +67,7 @@ const Notifications = () => {
               date: new Date().toISOString(),
               read: readNotifications.includes('period-prediction')
             });
-          } else if (daysUntil === -1) {
+          } else if (daysUntil === -1 && !dismissedNotifications.includes('period-started')) {
             tempNotifications.push({
               id: 'period-started',
               title: 'Period Predicted Today',
@@ -84,7 +86,7 @@ const Notifications = () => {
           
         if (cycleError) {
           console.error('Error checking user data:', cycleError);
-        } else if (!cycleData || cycleData.length === 0) {
+        } else if ((!cycleData || cycleData.length === 0) && !dismissedNotifications.includes('welcome')) {
           tempNotifications.push({
             id: 'welcome',
             title: 'Welcome to Femmelytics',
@@ -94,14 +96,16 @@ const Notifications = () => {
           });
         }
         
-        // Add chat suggestion
-        tempNotifications.push({
-          id: 'luna-chat',
-          title: 'Chat with Luna',
-          message: 'Need advice or information? Chat with Luna, your AI health assistant.',
-          date: new Date().toISOString(),
-          read: readNotifications.includes('luna-chat')
-        });
+        // Add chat suggestion if not dismissed
+        if (!dismissedNotifications.includes('luna-chat')) {
+          tempNotifications.push({
+            id: 'luna-chat',
+            title: 'Chat with Luna',
+            message: 'Need advice or information? Chat with Luna, your AI health assistant.',
+            date: new Date().toISOString(),
+            read: readNotifications.includes('luna-chat')
+          });
+        }
         
         setNotifications(tempNotifications);
         setUnreadCount(tempNotifications.filter(n => !n.read).length);
@@ -133,6 +137,24 @@ const Notifications = () => {
       setUnreadCount(0);
     }
   }, [isOpen, unreadCount, notifications, user]);
+
+  const dismissNotification = (id: string) => {
+    if (!user) return;
+    
+    // Get current dismissed notifications from localStorage
+    const dismissedNotificationsString = localStorage.getItem(`${user.id}_dismissed_notifications`);
+    const dismissedNotifications = dismissedNotificationsString ? JSON.parse(dismissedNotificationsString) : [];
+    
+    // Add this ID if not already present
+    if (!dismissedNotifications.includes(id)) {
+      dismissedNotifications.push(id);
+      localStorage.setItem(`${user.id}_dismissed_notifications`, JSON.stringify(dismissedNotifications));
+    }
+    
+    // Remove from current notifications list
+    setNotifications(prev => prev.filter(notification => notification.id !== id));
+    setUnreadCount(prev => Math.max(0, prev - (notifications.find(n => n.id === id && !n.read) ? 1 : 0)));
+  };
 
   const markAsRead = (id: string) => {
     if (!user) return;
@@ -204,10 +226,10 @@ const Notifications = () => {
             notifications.map((notification) => (
               <DropdownMenuItem 
                 key={notification.id}
-                className={`cursor-pointer p-3 ${!notification.read ? 'bg-lavender-50 dark:bg-lavender-900/30' : ''}`}
+                className={`cursor-pointer p-3 relative ${!notification.read ? 'bg-lavender-50 dark:bg-lavender-900/30' : ''}`}
                 onClick={() => markAsRead(notification.id)}
               >
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-1 pr-6">
                   <div className="flex justify-between items-center">
                     <span className="font-medium">{notification.title}</span>
                     <span className="text-xs text-muted-foreground">
@@ -216,6 +238,20 @@ const Notifications = () => {
                   </div>
                   <p className="text-sm text-muted-foreground">{notification.message}</p>
                 </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 absolute top-2 right-2 text-muted-foreground hover:text-foreground"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    dismissNotification(notification.id);
+                  }}
+                >
+                  <span className="sr-only">Dismiss</span>
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M1.70711 0.292893C1.31658 -0.0976311 0.683417 -0.0976311 0.292893 0.292893C-0.0976311 0.683417 -0.0976311 1.31658 0.292893 1.70711L3.58579 5L0.292893 8.29289C-0.0976311 8.68342 -0.0976311 9.31658 0.292893 9.70711C0.683417 10.0976 1.31658 10.0976 1.70711 9.70711L5 6.41421L8.29289 9.70711C8.68342 10.0976 9.31658 10.0976 9.70711 9.70711C10.0976 9.31658 10.0976 8.68342 9.70711 8.29289L6.41421 5L9.70711 1.70711C10.0976 1.31658 10.0976 0.683417 9.70711 0.292893C9.31658 -0.0976311 8.68342 -0.0976311 8.29289 0.292893L5 3.58579L1.70711 0.292893Z" fill="currentColor" />
+                  </svg>
+                </Button>
               </DropdownMenuItem>
             ))
           ) : (
