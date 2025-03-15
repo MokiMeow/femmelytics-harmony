@@ -9,7 +9,162 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      cycle_entries: {
+        Row: {
+          created_at: string
+          cycle_day: number | null
+          cycle_phase: Database["public"]["Enums"]["cycle_phase"] | null
+          date: string
+          flow_intensity: Database["public"]["Enums"]["flow_intensity"]
+          id: string
+          notes: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          cycle_day?: number | null
+          cycle_phase?: Database["public"]["Enums"]["cycle_phase"] | null
+          date: string
+          flow_intensity?: Database["public"]["Enums"]["flow_intensity"]
+          id?: string
+          notes?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          cycle_day?: number | null
+          cycle_phase?: Database["public"]["Enums"]["cycle_phase"] | null
+          date?: string
+          flow_intensity?: Database["public"]["Enums"]["flow_intensity"]
+          id?: string
+          notes?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      cycle_statistics: {
+        Row: {
+          average_cycle_length: number | null
+          average_period_length: number | null
+          created_at: string
+          id: string
+          last_cycle_start_date: string | null
+          next_predicted_date: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          average_cycle_length?: number | null
+          average_period_length?: number | null
+          created_at?: string
+          id?: string
+          last_cycle_start_date?: string | null
+          next_predicted_date?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          average_cycle_length?: number | null
+          average_period_length?: number | null
+          created_at?: string
+          id?: string
+          last_cycle_start_date?: string | null
+          next_predicted_date?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      mood_entries: {
+        Row: {
+          created_at: string
+          date: string
+          energy_score: number | null
+          id: string
+          mood_score: number | null
+          notes: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          energy_score?: number | null
+          id?: string
+          mood_score?: number | null
+          notes?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          energy_score?: number | null
+          id?: string
+          mood_score?: number | null
+          notes?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          first_name: string | null
+          id: string
+          last_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          first_name?: string | null
+          id: string
+          last_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      symptom_entries: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          severity: number | null
+          symptom_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          severity?: number | null
+          symptom_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          severity?: number | null
+          symptom_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +173,8 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      cycle_phase: "menstrual" | "follicular" | "ovulation" | "luteal"
+      flow_intensity: "none" | "light" | "medium" | "heavy" | "very_heavy"
     }
     CompositeTypes: {
       [_ in never]: never

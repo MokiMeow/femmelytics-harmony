@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, Clock, Activity, Moon, Droplet, Thermometer, Heart, Plus, Save, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -16,15 +16,22 @@ import {
 } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/components/ui/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { fetchDayEntry, saveTrackingData } from '@/services/trackerService';
 
 const Track = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
   const [date, setDate] = useState<Date>(new Date());
   const [mood, setMood] = useState<number>(3);
   const [energy, setEnergy] = useState<number>(3);
   const [flow, setFlow] = useState<number>(0);
   const [symptoms, setSymptoms] = useState<string[]>([]);
   const [notes, setNotes] = useState<string>('');
+  const [isFetchingData, setIsFetchingData] = useState(false);
 
   const moodLabels = ['Very Low', 'Low', 'Neutral', 'Good', 'Excellent'];
   const energyLabels = ['Exhausted', 'Tired', 'Normal', 'Energetic', 'Very Energetic'];
@@ -41,6 +48,65 @@ const Track = () => {
     { id: 'insomnia', label: 'Insomnia', icon: <Moon className="h-4 w-4" /> },
   ];
 
+  // Redirect if not logged in
+  useEffect(() => {
+    if (!user) {
+      navigate('/auth');
+    }
+  }, [user, navigate]);
+
+  // Fetch data for selected date
+  useEffect(() => {
+    const loadDayEntry = async () => {
+      if (!user) return;
+      
+      setIsFetchingData(true);
+      try {
+        const data = await fetchDayEntry(date);
+        
+        // Set flow
+        if (data.cycle) {
+          const flowMap: Record<string, number> = {
+            'none': 0,
+            'light': 1,
+            'medium': 2,
+            'heavy': 3,
+            'very_heavy': 4
+          };
+          setFlow(flowMap[data.cycle.flow_intensity] || 0);
+        } else {
+          setFlow(0);
+        }
+        
+        // Set mood and energy
+        if (data.mood) {
+          setMood(data.mood.mood_score);
+          setEnergy(data.mood.energy_score);
+          if (data.mood.notes) {
+            setNotes(data.mood.notes);
+          }
+        } else {
+          setMood(3);
+          setEnergy(3);
+        }
+        
+        // Set symptoms
+        if (data.symptoms && data.symptoms.length > 0) {
+          setSymptoms(data.symptoms.map(s => s.symptom_type));
+        } else {
+          setSymptoms([]);
+        }
+        
+      } catch (error) {
+        console.error("Error loading day entry:", error);
+      } finally {
+        setIsFetchingData(false);
+      }
+    };
+    
+    loadDayEntry();
+  }, [date, user]);
+
   const toggleSymptom = (symptomId: string) => {
     if (symptoms.includes(symptomId)) {
       setSymptoms(symptoms.filter((id) => id !== symptomId));
@@ -49,20 +115,57 @@ const Track = () => {
     }
   };
 
-  const handleSave = () => {
-    // Here we would save the tracking data
-    // For now, just simulate and navigate to dashboard
-    console.log({
-      date,
-      mood,
-      energy,
-      flow,
-      symptoms,
-      notes
-    });
+  const handleSave = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to save your data.",
+        variant: "destructive"
+      });
+      navigate('/auth');
+      return;
+    }
     
-    navigate('/dashboard');
+    setIsLoading(true);
+    
+    try {
+      // Convert flow number to intensity string
+      const flowIntensity = ['none', 'light', 'medium', 'heavy', 'very_heavy'][flow] as 'none' | 'light' | 'medium' | 'heavy' | 'very_heavy';
+      
+      await saveTrackingData(
+        date,
+        flowIntensity,
+        mood,
+        energy,
+        symptoms,
+        notes
+      );
+      
+      toast({
+        title: "Entry saved",
+        description: "Your tracking data has been successfully saved.",
+      });
+      
+      navigate('/dashboard');
+    } catch (error) {
+      console.error("Error saving tracking data:", error);
+      toast({
+        title: "Error saving data",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  if (isFetchingData) {
+    return (
+      <div className="min-h-screen bg-background flex justify-center items-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -140,7 +243,7 @@ const Track = () => {
                   
                   <div className="space-y-6">
                     <Slider
-                      defaultValue={[flow]}
+                      value={[flow]}
                       max={4}
                       step={1}
                       onValueChange={(value) => setFlow(value[0])}
@@ -175,7 +278,7 @@ const Track = () => {
                   
                   <div className="space-y-6">
                     <Slider
-                      defaultValue={[mood]}
+                      value={[mood]}
                       max={4}
                       step={1}
                       onValueChange={(value) => setMood(value[0])}
@@ -208,7 +311,7 @@ const Track = () => {
                   
                   <div className="space-y-6">
                     <Slider
-                      defaultValue={[energy]}
+                      value={[energy]}
                       max={4}
                       step={1}
                       onValueChange={(value) => setEnergy(value[0])}
@@ -294,9 +397,19 @@ const Track = () => {
             <Button
               className="bg-primary hover:bg-primary/90 text-white px-6"
               onClick={handleSave}
+              disabled={isLoading}
             >
-              <Save className="h-4 w-4 mr-2" />
-              Save Entry
+              {isLoading ? (
+                <div className="flex items-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  <span>Saving...</span>
+                </div>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Entry
+                </>
+              )}
             </Button>
           </div>
         </Tabs>
