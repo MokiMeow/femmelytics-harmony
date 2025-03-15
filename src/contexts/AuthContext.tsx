@@ -33,16 +33,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     fetchUser();
 
-    // Track explicit sign-ins across browser sessions with localStorage instead of sessionStorage
-    const hasShownWelcomeToast = localStorage.getItem('hasShownWelcomeToast') === 'true';
-
+    // Set up auth state change listener
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state change event:', event);
+        
         if (session?.user) {
+          console.log('User signed in:', session.user.email);
           setUser(session.user);
           
-          // Only show welcome toast on explicit SIGNED_IN event and if we haven't shown it already
-          if (event === 'SIGNED_IN' && !hasShownWelcomeToast) {
+          // Only show welcome toast on explicit SIGNED_IN event and if we haven't shown it already in this browser session
+          if (event === 'SIGNED_IN' && !localStorage.getItem('hasShownWelcomeToast')) {
             toast({
               title: "Welcome back!",
               description: "You have successfully signed in.",
@@ -50,12 +51,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             localStorage.setItem('hasShownWelcomeToast', 'true');
           }
         } else {
+          console.log('User signed out or session expired');
           setUser(null);
-          // Clear the flag when user signs out
+          
+          // Clear the welcome toast flag when user signs out
           if (event === 'SIGNED_OUT') {
             localStorage.removeItem('hasShownWelcomeToast');
           }
         }
+        
         setLoading(false);
       }
     );
@@ -90,6 +94,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signIn = async (email: string, password: string) => {
     try {
+      // Clear the welcome toast flag before signing in to ensure it shows for the new session
+      localStorage.removeItem('hasShownWelcomeToast');
+      
       // For development purposes, we'll hardcode mack@gmail.com credentials
       const actualEmail = email === 'mack@gmail.com' ? 'mack@gmail.com' : email;
       const actualPassword = email === 'mack@gmail.com' ? 'mohithtony' : password;
@@ -107,9 +114,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
         throw error;
       }
-
-      // Remove this line as we're handling the toast in the onAuthStateChange
-      // localStorage.setItem('hasShownWelcomeToast', 'false');
       
       return data;
     } catch (error: any) {

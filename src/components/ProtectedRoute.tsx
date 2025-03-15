@@ -9,6 +9,9 @@ interface ProtectedRouteProps {
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
 
+  // Add more detailed logging for debugging
+  console.log('ProtectedRoute - Auth state:', { user: user?.email, loading });
+
   if (loading) {
     return (
       <div className="min-h-screen flex justify-center items-center">
@@ -18,9 +21,11 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   }
 
   if (!user) {
+    console.log('ProtectedRoute - Not authenticated, redirecting to /auth');
     return <Navigate to="/auth" replace />;
   }
 
+  console.log('ProtectedRoute - Authenticated, rendering children');
   return <>{children}</>;
 };
 
