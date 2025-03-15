@@ -61,7 +61,6 @@ const Navigation = () => {
           <>
             <div className="flex items-center gap-2">
               <ThemeToggle />
-              {user && <Notifications />}
               <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
                 <SheetTrigger asChild>
                   <Button variant="ghost" size="icon" onClick={toggleMenu}>
@@ -165,7 +164,6 @@ const Navigation = () => {
               )}
             </nav>
             <div className="flex items-center gap-4">
-              {user && <Notifications />}
               <ThemeToggle />
               <UserNavigation />
             </div>

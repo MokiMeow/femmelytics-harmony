@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import jsPDF from 'jspdf';
@@ -116,10 +117,44 @@ const generateAISummary = async (reportData: any): Promise<string> => {
 
 const generateChartAsBase64 = (canvasId: string, chartData: any, chartType: string, title: string): Promise<string> => {
   return new Promise((resolve) => {
+    // Check if we have sufficient data to generate a chart
+    const hasData = chartType === 'pie' 
+      ? (chartData.labels?.length > 0 && chartData.values?.length > 0)
+      : (chartData.labels?.length > 0 && chartData.datasets?.[0]?.data?.length > 0);
+
+    if (!hasData) {
+      // Create a canvas with a "No data" message instead of a chart
+      const canvas = document.createElement('canvas');
+      canvas.id = canvasId;
+      canvas.width = 400;
+      canvas.height = 200;
+      document.body.appendChild(canvas);
+      
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.fillStyle = '#f5f5f5';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.font = 'bold 16px Arial';
+        ctx.fillStyle = '#666666';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(title, canvas.width / 2, 30);
+        
+        ctx.font = '14px Arial';
+        ctx.fillText('Not sufficient data to create this chart', canvas.width / 2, canvas.height / 2);
+      }
+      
+      const imgData = canvas.toDataURL('image/png');
+      document.body.removeChild(canvas);
+      resolve(imgData);
+      return;
+    }
+    
     const canvas = document.createElement('canvas');
     canvas.id = canvasId;
-    canvas.width = 500;
-    canvas.height = 300;
+    canvas.width = 400;
+    canvas.height = 220;
     canvas.style.display = 'none';
     document.body.appendChild(canvas);
     
@@ -138,17 +173,29 @@ const generateChartAsBase64 = (canvasId: string, chartData: any, chartType: stri
           datasets: chartData.datasets,
         },
         options: {
-          responsive: true,
+          responsive: false,
+          maintainAspectRatio: false,
           plugins: {
             title: {
               display: true,
               text: title,
               font: {
-                size: 16,
+                size: 14,
+              },
+              padding: {
+                top: 10,
+                bottom: 10
               }
             },
             legend: {
               position: 'top',
+              labels: {
+                boxWidth: 12,
+                padding: 10,
+                font: {
+                  size: 11
+                }
+              }
             },
           },
           scales: {
@@ -157,12 +204,28 @@ const generateChartAsBase64 = (canvasId: string, chartData: any, chartType: stri
               title: {
                 display: true,
                 text: chartData.yAxisLabel || 'Value',
+                font: {
+                  size: 11
+                }
+              },
+              ticks: {
+                font: {
+                  size: 10
+                }
               }
             },
             x: {
               title: {
                 display: true,
                 text: chartData.xAxisLabel || 'Date',
+                font: {
+                  size: 11
+                }
+              },
+              ticks: {
+                font: {
+                  size: 10
+                }
               }
             }
           },
@@ -182,22 +245,37 @@ const generateChartAsBase64 = (canvasId: string, chartData: any, chartType: stri
               'rgba(255, 206, 86, 0.6)',
               'rgba(75, 192, 192, 0.6)',
               'rgba(153, 102, 255, 0.6)',
+              'rgba(255, 159, 64, 0.6)',
+              'rgba(199, 199, 199, 0.6)',
+              'rgba(83, 102, 255, 0.6)',
             ],
             borderWidth: 1
           }]
         },
         options: {
-          responsive: true,
+          responsive: false,
+          maintainAspectRatio: false,
           plugins: {
             title: {
               display: true,
               text: title,
               font: {
-                size: 16,
+                size: 14,
+              },
+              padding: {
+                top: 10,
+                bottom: 10
               }
             },
             legend: {
-              position: 'top',
+              position: 'right',
+              labels: {
+                boxWidth: 12,
+                padding: 10,
+                font: {
+                  size: 10
+                }
+              }
             },
           },
           animation: false
@@ -211,17 +289,29 @@ const generateChartAsBase64 = (canvasId: string, chartData: any, chartType: stri
           datasets: chartData.datasets,
         },
         options: {
-          responsive: true,
+          responsive: false,
+          maintainAspectRatio: false,
           plugins: {
             title: {
               display: true,
               text: title,
               font: {
-                size: 16,
+                size: 14,
+              },
+              padding: {
+                top: 10,
+                bottom: 10
               }
             },
             legend: {
               position: 'top',
+              labels: {
+                boxWidth: 12,
+                padding: 10,
+                font: {
+                  size: 11
+                }
+              }
             },
           },
           scales: {
@@ -230,6 +320,21 @@ const generateChartAsBase64 = (canvasId: string, chartData: any, chartType: stri
               title: {
                 display: true,
                 text: chartData.yAxisLabel || 'Value',
+                font: {
+                  size: 11
+                }
+              },
+              ticks: {
+                font: {
+                  size: 10
+                }
+              }
+            },
+            x: {
+              ticks: {
+                font: {
+                  size: 10
+                }
               }
             }
           },
@@ -336,7 +441,7 @@ const createPDFReport = async (reportData: any, includeCharts: boolean): Promise
     
     yPosition = (doc as any).lastAutoTable.finalY + 15;
     
-    if (includeCharts && reportData.cycleData.length > 0) {
+    if (includeCharts) {
       if (yPosition > 180) {
         doc.addPage();
         yPosition = 20;
@@ -356,8 +461,8 @@ const createPDFReport = async (reportData: any, includeCharts: boolean): Promise
           'Cycle Phase Distribution'
         );
         
-        doc.addImage(chartImgData, 'PNG', 15, yPosition, 180, 110);
-        yPosition += 120;
+        doc.addImage(chartImgData, 'PNG', 15, yPosition, 180, 100);
+        yPosition += 110;
       } catch (error) {
         console.error('Error generating cycle chart:', error);
       }
@@ -408,8 +513,8 @@ const createPDFReport = async (reportData: any, includeCharts: boolean): Promise
           'Symptom Frequency'
         );
         
-        doc.addImage(chartImgData, 'PNG', 15, yPosition, 180, 110);
-        yPosition += 120;
+        doc.addImage(chartImgData, 'PNG', 15, yPosition, 180, 100);
+        yPosition += 110;
       } catch (error) {
         console.error('Error generating symptom chart:', error);
       }
@@ -461,8 +566,8 @@ const createPDFReport = async (reportData: any, includeCharts: boolean): Promise
           'Mood & Energy Trends'
         );
         
-        doc.addImage(chartImgData, 'PNG', 15, yPosition, 180, 110);
-        yPosition += 120;
+        doc.addImage(chartImgData, 'PNG', 15, yPosition, 180, 100);
+        yPosition += 110;
       } catch (error) {
         console.error('Error generating mood chart:', error);
       }
