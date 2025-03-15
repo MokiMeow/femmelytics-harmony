@@ -8,10 +8,14 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, FileText, AlertCircle } from 'lucide-react';
+import { Loader2, FileText, AlertCircle, Calendar as CalendarIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { generateReport, ExportDataType, ExportPeriod } from '@/services/reportService';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format, addDays } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface ExportReportDialogProps {
   open: boolean;
@@ -22,9 +26,28 @@ const ExportReportDialog = ({ open, onOpenChange }: ExportReportDialogProps) => 
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [period, setPeriod] = useState<ExportPeriod>(30);
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [dataTypes, setDataTypes] = useState<ExportDataType[]>(['all']);
   const [includeCharts, setIncludeCharts] = useState(true);
   const [includeSummary, setIncludeSummary] = useState(true);
+  
+  const handlePeriodChange = (value: string) => {
+    const newPeriod = value as ExportPeriod;
+    setPeriod(newPeriod);
+    
+    // When a fixed period is selected, clear custom dates
+    if (newPeriod !== 'custom') {
+      setStartDate(undefined);
+      setEndDate(undefined);
+    } else {
+      // When switching to custom, set default date range to last 30 days
+      const end = new Date();
+      const start = addDays(end, -30);
+      setStartDate(start);
+      setEndDate(end);
+    }
+  };
   
   const handleExport = async () => {
     setLoading(true);
@@ -32,6 +55,8 @@ const ExportReportDialog = ({ open, onOpenChange }: ExportReportDialogProps) => 
       const pdfBlob = await generateReport({
         dataTypes,
         period,
+        startDate,
+        endDate,
         includeCharts,
         includeSummary
       });
@@ -103,7 +128,7 @@ const ExportReportDialog = ({ open, onOpenChange }: ExportReportDialogProps) => 
             <div className="space-y-4">
               <div>
                 <h3 className="text-sm font-medium mb-2">Time Period</h3>
-                <Select value={period.toString()} onValueChange={(value) => setPeriod(parseInt(value) as ExportPeriod)}>
+                <Select value={String(period)} onValueChange={handlePeriodChange}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select time period" />
                   </SelectTrigger>
@@ -113,9 +138,77 @@ const ExportReportDialog = ({ open, onOpenChange }: ExportReportDialogProps) => 
                     <SelectItem value="90">Last 3 months</SelectItem>
                     <SelectItem value="180">Last 6 months</SelectItem>
                     <SelectItem value="365">Last year</SelectItem>
+                    <SelectItem value="custom">Custom date range</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+              
+              {period === 'custom' && (
+                <div className="flex flex-col space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex flex-col space-y-1">
+                      <Label htmlFor="startDate">Start Date</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            id="startDate"
+                            variant="outline"
+                            className={cn(
+                              "justify-start text-left font-normal",
+                              !startDate && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {startDate ? format(startDate, 'PPP') : "Select date"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={startDate}
+                            onSelect={setStartDate}
+                            initialFocus
+                            disabled={(date) => date > new Date() || (endDate ? date > endDate : false)}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    
+                    <div className="flex flex-col space-y-1">
+                      <Label htmlFor="endDate">End Date</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            id="endDate"
+                            variant="outline"
+                            className={cn(
+                              "justify-start text-left font-normal",
+                              !endDate && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {endDate ? format(endDate, 'PPP') : "Select date"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={endDate}
+                            onSelect={setEndDate}
+                            initialFocus
+                            disabled={(date) => date > new Date() || (startDate ? date < startDate : false)}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
+                  
+                  <div className="text-sm text-muted-foreground">
+                    Select a specific date range for your report. For medication history, 
+                    using a shorter range (1-3 months) will produce more readable reports.
+                  </div>
+                </div>
+              )}
               
               <div>
                 <h3 className="text-sm font-medium mb-2">Data to Include</h3>
@@ -226,7 +319,10 @@ const ExportReportDialog = ({ open, onOpenChange }: ExportReportDialogProps) => 
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleExport} disabled={loading || dataTypes.length === 0}>
+          <Button 
+            onClick={handleExport} 
+            disabled={loading || dataTypes.length === 0 || (period === 'custom' && (!startDate || !endDate))}
+          >
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

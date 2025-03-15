@@ -16,9 +16,22 @@ export const generateReport = async (options: ExportOptions): Promise<Blob> => {
     throw new Error('User not authenticated');
   }
   
-  const endDate = new Date();
-  const startDate = new Date();
-  startDate.setDate(endDate.getDate() - options.period);
+  // Handle date range calculation
+  let startDate: Date;
+  let endDate: Date = options.endDate || new Date();
+  
+  if (options.period === 'custom' && options.startDate) {
+    startDate = options.startDate;
+  } else {
+    startDate = new Date();
+    // Only subtract days if period is a number (not 'custom')
+    if (typeof options.period === 'number') {
+      startDate.setDate(endDate.getDate() - options.period);
+    } else {
+      // Default to 30 days if custom period selected without startDate
+      startDate.setDate(endDate.getDate() - 30);
+    }
+  }
   
   // Fetch all the required data
   const reportData = await fetchReportData(
