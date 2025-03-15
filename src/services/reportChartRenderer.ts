@@ -1,5 +1,5 @@
 
-import { Chart, registerables } from 'chart.js';
+import { Chart, registerables, ChartConfiguration, LegendItem } from 'chart.js';
 import { ChartData } from './reportTypes';
 
 // Register Chart.js components
@@ -236,23 +236,26 @@ export const generateChartAsBase64 = (canvasId: string, chartData: ChartData, ch
                 font: {
                   size: 16  // Larger legend text
                 },
-                // Generate more readable labels with percentages
-                generateLabels: (chart) => {
+                // Fix: Generate more readable labels with percentages
+                generateLabels: function(chart) {
                   const datasets = chart.data.datasets;
-                  const total = datasets[0].data.reduce((sum: number, value: number) => sum + value, 0);
+                  const totalValue = datasets[0].data.reduce((sum: number, value: any) => {
+                    return sum + (typeof value === 'number' ? value : 0);
+                  }, 0);
                   
                   return chart.data.labels.map((label, i) => {
-                    const value = datasets[0].data[i] as number;
-                    const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                    const value = datasets[0].data[i];
+                    const numValue = typeof value === 'number' ? value : 0;
+                    const percentage = totalValue > 0 ? Math.round((numValue / totalValue) * 100) : 0;
                     
                     return {
                       text: `${label} (${percentage}%)`,
                       fillStyle: datasets[0].backgroundColor[i],
                       strokeStyle: datasets[0].borderColor,
-                      lineWidth: datasets[0].borderWidth,
-                      hidden: isNaN(value) || value === 0,
+                      lineWidth: 2, // Fixed lineWidth as a number
+                      hidden: isNaN(numValue) || numValue === 0,
                       index: i
-                    };
+                    } as LegendItem;
                   });
                 }
               }
@@ -268,10 +271,13 @@ export const generateChartAsBase64 = (canvasId: string, chartData: ChartData, ch
               callbacks: {
                 label: (context) => {
                   const dataset = context.dataset;
-                  const total = dataset.data.reduce((sum: number, value: number) => sum + value, 0);
-                  const value = dataset.data[context.dataIndex] as number;
-                  const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
-                  return `${context.label}: ${value} (${percentage}%)`;
+                  const total = dataset.data.reduce((sum: number, value: any) => {
+                    return sum + (typeof value === 'number' ? value : 0);
+                  }, 0);
+                  const value = dataset.data[context.dataIndex];
+                  const numValue = typeof value === 'number' ? value : 0;
+                  const percentage = total > 0 ? Math.round((numValue / total) * 100) : 0;
+                  return `${context.label}: ${numValue} (${percentage}%)`;
                 }
               }
             }
