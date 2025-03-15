@@ -33,12 +33,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     fetchUser();
 
+    // Store a flag in sessionStorage to track explicit sign-ins
+    const isInitialPageLoad = sessionStorage.getItem('initialPageLoad') !== 'done';
+    if (isInitialPageLoad) {
+      sessionStorage.setItem('initialPageLoad', 'done');
+    }
+
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (session?.user) {
           setUser(session.user);
           // Only show welcome toast on explicit SIGNED_IN event, not on session recovery
-          if (event === 'SIGNED_IN') {
+          if (event === 'SIGNED_IN' && !isInitialPageLoad) {
             toast({
               title: "Welcome back!",
               description: "You have successfully signed in.",
