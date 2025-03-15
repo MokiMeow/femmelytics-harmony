@@ -636,14 +636,14 @@ const createPDFReport = async (reportData: any, includeCharts: boolean): Promise
   // Function to handle page breaks and header/footer
   const checkPageBreak = (minRemainingSpace: number) => {
     // Use the correct method to get Y position in jsPDF
-    const currentY = (doc as any).lastAutoTable?.finalY || doc.internal.getVerticalCoordinateString();
-    if (parseFloat(currentY) > pageHeight - minRemainingSpace) {
+    const currentY = (doc as any).lastAutoTable?.finalY || doc.internal.getCurrentPositionY();
+    if (parseFloat(String(currentY)) > pageHeight - minRemainingSpace) {
       doc.addPage();
       currentPage++;
       addHeaderFooter(currentPage);
       return 25; // New Y position after page break
     }
-    return parseFloat(currentY);
+    return parseFloat(String(currentY));
   };
   
   yPosition = 25;
@@ -932,4 +932,94 @@ const createPDFReport = async (reportData: any, includeCharts: boolean): Promise
   
   // Return the PDF as a Blob
   return doc.output('blob');
+};
+
+export const syncWithGoogleCalendar = async (calendarId: string, accessToken: string): Promise<boolean> => {
+  try {
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError) throw userError;
+    
+    const userId = userData.user?.id;
+    if (!userId) {
+      throw new Error('User not authenticated');
+    }
+    
+    // Calculate the next 3 months of cycle predictions
+    const endDate = new Date();
+    endDate.setMonth(endDate.getMonth() + 3);
+    const startDate = new Date();
+    
+    // Fetch user's cycle data
+    const { data: cycleData, error: cycleError } = await supabase
+      .from('cycle_entries')
+      .select('*')
+      .eq('user_id', userId)
+      .gte('date', format(startDate, 'yyyy-MM-dd'))
+      .lte('date', format(endDate, 'yyyy-MM-dd'))
+      .order('date', { ascending: true });
+      
+    if (cycleError) throw cycleError;
+    
+    if (!cycleData || cycleData.length === 0) {
+      console.log('No cycle data to sync');
+      return true; // No data to sync, but not an error
+    }
+    
+    // Create events for each cycle entry
+    for (const entry of cycleData) {
+      const eventDate = new Date(entry.date);
+      const eventEndDate = new Date(entry.date);
+      eventEndDate.setDate(eventEndDate.getDate() + 1); // All-day event
+      
+      const phase = entry.cycle_phase || 'Not specified';
+      let color = '#9C4EA1'; // Default color (lavender)
+      
+      // Set color based on cycle phase
+      if (phase.toLowerCase().includes('menstrual')) {
+        color = '#E57373'; // Red for menstrual
+      } else if (phase.toLowerCase().includes('follicular')) {
+        color = '#64B5F6'; // Blue for follicular
+      } else if (phase.toLowerCase().includes('ovulation')) {
+        color = '#81C784'; // Green for ovulation
+      } else if (phase.toLowerCase().includes('luteal')) {
+        color = '#FFB74D'; // Orange for luteal
+      }
+      
+      // Create event
+      const event = {
+        'summary': `Cycle: ${phase}`,
+        'description': `Flow: ${entry.flow_intensity || 'None'}\nNotes: ${entry.notes || 'No notes'}`,
+        'start': {
+          'date': format(eventDate, 'yyyy-MM-dd'),
+          'timeZone': Intl.DateTimeFormat().resolvedOptions().timeZone
+        },
+        'end': {
+          'date': format(eventEndDate, 'yyyy-MM-dd'),
+          'timeZone': Intl.DateTimeFormat().resolvedOptions().timeZone
+        },
+        'colorId': color,
+        'transparency': 'transparent'
+      };
+      
+      // Add event to Google Calendar
+      const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(event)
+      });
+      
+      if (!response.ok) {
+        console.error('Failed to create event:', await response.text());
+        // Continue with other events even if one fails
+      }
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error syncing with Google Calendar:', error);
+    return false;
+  }
 };
