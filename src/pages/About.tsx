@@ -135,7 +135,7 @@ const About = () => {
       <footer className="py-12 border-t border-border">
         <div className="container px-4 mx-auto text-center">
           <p className="text-sm text-muted-foreground">
-            © 2023 Femmelytics. All rights reserved.
+            © 2025 Femmelytics. All rights reserved.
           </p>
         </div>
       </footer>
