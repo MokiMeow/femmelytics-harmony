@@ -1,8 +1,14 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { fetchActiveMedications } from './medicationService';
+import { Chart, registerables } from 'chart.js';
+import { PieArcDatum } from '@visx/shape/lib/shapes/Pie';
+
+// Register Chart.js components
+Chart.register(...registerables);
 
 export type ExportDataType = 'cycle' | 'symptoms' | 'mood' | 'medications' | 'all';
 export type ExportPeriod = 7 | 30 | 90 | 180 | 365;
@@ -115,6 +121,201 @@ const generateAISummary = async (reportData: any): Promise<string> => {
   }
 };
 
+const generateChartAsBase64 = (canvasId: string, chartData: any, chartType: string, title: string): Promise<string> => {
+  return new Promise((resolve) => {
+    // Create a temporary canvas
+    const canvas = document.createElement('canvas');
+    canvas.id = canvasId;
+    canvas.width = 500;
+    canvas.height = 300;
+    canvas.style.display = 'none';
+    document.body.appendChild(canvas);
+    
+    // Get the canvas context and create the chart
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      throw new Error('Could not get canvas context');
+    }
+    
+    let chart;
+    
+    if (chartType === 'line') {
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: chartData.labels,
+          datasets: chartData.datasets,
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            title: {
+              display: true,
+              text: title,
+              font: {
+                size: 16,
+              }
+            },
+            legend: {
+              position: 'top',
+            },
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: chartData.yAxisLabel || 'Value',
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: chartData.xAxisLabel || 'Date',
+              }
+            }
+          },
+          animation: false
+        }
+      });
+    } else if (chartType === 'pie') {
+      chart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: chartData.labels,
+          datasets: [{
+            data: chartData.values,
+            backgroundColor: [
+              'rgba(255, 99, 132, 0.6)',
+              'rgba(54, 162, 235, 0.6)',
+              'rgba(255, 206, 86, 0.6)',
+              'rgba(75, 192, 192, 0.6)',
+              'rgba(153, 102, 255, 0.6)',
+            ],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            title: {
+              display: true,
+              text: title,
+              font: {
+                size: 16,
+              }
+            },
+            legend: {
+              position: 'top',
+            },
+          },
+          animation: false
+        }
+      });
+    } else if (chartType === 'bar') {
+      chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: chartData.labels,
+          datasets: chartData.datasets,
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            title: {
+              display: true,
+              text: title,
+              font: {
+                size: 16,
+              }
+            },
+            legend: {
+              position: 'top',
+            },
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: chartData.yAxisLabel || 'Value',
+              }
+            }
+          },
+          animation: false
+        }
+      });
+    }
+    
+    // Convert chart to base64 image
+    const imgData = canvas.toDataURL('image/png');
+    
+    // Clean up
+    if (chart) {
+      chart.destroy();
+    }
+    document.body.removeChild(canvas);
+    
+    resolve(imgData);
+  });
+};
+
+const prepareSymptomChartData = (symptomsData: any[]): any => {
+  const symptomCounts: {[key: string]: number} = {};
+  
+  symptomsData.forEach(entry => {
+    const symptom = entry.symptom_type;
+    symptomCounts[symptom] = (symptomCounts[symptom] || 0) + 1;
+  });
+  
+  return {
+    labels: Object.keys(symptomCounts),
+    values: Object.values(symptomCounts),
+  };
+};
+
+const prepareMoodChartData = (moodData: any[]): any => {
+  const dates = moodData.map(entry => format(new Date(entry.date), 'MMM d'));
+  const moodScores = moodData.map(entry => entry.mood_score);
+  const energyScores = moodData.map(entry => entry.energy_score);
+  
+  return {
+    labels: dates,
+    datasets: [
+      {
+        label: 'Mood',
+        data: moodScores,
+        borderColor: 'rgba(255, 99, 132, 1)',
+        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+        tension: 0.3,
+      },
+      {
+        label: 'Energy',
+        data: energyScores,
+        borderColor: 'rgba(54, 162, 235, 1)',
+        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+        tension: 0.3,
+      }
+    ],
+    yAxisLabel: 'Score (1-5)',
+    xAxisLabel: 'Date',
+  };
+};
+
+const prepareCyclePhaseChartData = (cycleData: any[]): any => {
+  const phaseCounts: {[key: string]: number} = {};
+  
+  cycleData.forEach(entry => {
+    const phase = entry.cycle_phase || 'Not specified';
+    phaseCounts[phase] = (phaseCounts[phase] || 0) + 1;
+  });
+  
+  return {
+    labels: Object.keys(phaseCounts),
+    values: Object.values(phaseCounts),
+  };
+};
+
 const createPDFReport = async (reportData: any, includeCharts: boolean): Promise<Blob> => {
   const doc = new jsPDF();
   
@@ -147,6 +348,35 @@ const createPDFReport = async (reportData: any, includeCharts: boolean): Promise
     });
     
     yPosition = (doc as any).lastAutoTable.finalY + 15;
+    
+    // Add cycle phase chart if requested
+    if (includeCharts && reportData.cycleData.length > 0) {
+      // Check if we need a new page
+      if (yPosition > 180) {
+        doc.addPage();
+        yPosition = 20;
+      }
+      
+      doc.setFontSize(14);
+      doc.text('Cycle Phase Distribution', 14, yPosition);
+      yPosition += 10;
+      
+      const cycleChartData = prepareCyclePhaseChartData(reportData.cycleData);
+      
+      try {
+        const chartImgData = await generateChartAsBase64(
+          'cycle-chart', 
+          cycleChartData, 
+          'pie', 
+          'Cycle Phase Distribution'
+        );
+        
+        doc.addImage(chartImgData, 'PNG', 15, yPosition, 180, 110);
+        yPosition += 120;
+      } catch (error) {
+        console.error('Error generating cycle chart:', error);
+      }
+    }
   }
   
   // Add symptom data if available
@@ -174,6 +404,35 @@ const createPDFReport = async (reportData: any, includeCharts: boolean): Promise
     });
     
     yPosition = (doc as any).lastAutoTable.finalY + 15;
+    
+    // Add symptoms chart if requested
+    if (includeCharts && reportData.symptomsData.length > 0) {
+      // Check if we need a new page
+      if (yPosition > 180) {
+        doc.addPage();
+        yPosition = 20;
+      }
+      
+      doc.setFontSize(14);
+      doc.text('Symptom Frequency', 14, yPosition);
+      yPosition += 10;
+      
+      const symptomChartData = prepareSymptomChartData(reportData.symptomsData);
+      
+      try {
+        const chartImgData = await generateChartAsBase64(
+          'symptom-chart', 
+          symptomChartData, 
+          'pie', 
+          'Symptom Frequency'
+        );
+        
+        doc.addImage(chartImgData, 'PNG', 15, yPosition, 180, 110);
+        yPosition += 120;
+      } catch (error) {
+        console.error('Error generating symptom chart:', error);
+      }
+    }
   }
   
   // Add mood data if available
@@ -202,6 +461,35 @@ const createPDFReport = async (reportData: any, includeCharts: boolean): Promise
     });
     
     yPosition = (doc as any).lastAutoTable.finalY + 15;
+    
+    // Add mood chart if requested
+    if (includeCharts && reportData.moodData.length > 0) {
+      // Check if we need a new page
+      if (yPosition > 180) {
+        doc.addPage();
+        yPosition = 20;
+      }
+      
+      doc.setFontSize(14);
+      doc.text('Mood & Energy Trends', 14, yPosition);
+      yPosition += 10;
+      
+      const moodChartData = prepareMoodChartData(reportData.moodData);
+      
+      try {
+        const chartImgData = await generateChartAsBase64(
+          'mood-chart', 
+          moodChartData, 
+          'line', 
+          'Mood & Energy Trends'
+        );
+        
+        doc.addImage(chartImgData, 'PNG', 15, yPosition, 180, 110);
+        yPosition += 120;
+      } catch (error) {
+        console.error('Error generating mood chart:', error);
+      }
+    }
   }
   
   // Add medications data if available

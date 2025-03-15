@@ -7,13 +7,15 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
-import { ArrowLeft, Save, User, Mail, Calendar, Shield, Settings, Clock } from 'lucide-react';
+import { useToast } from "@/hooks/use-toast";
+import { ArrowLeft, Save, User, Mail, Calendar, Shield, Settings, Clock, Upload, Camera } from 'lucide-react';
 import { Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { format } from 'date-fns';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import GoogleCalendarIntegration from '@/components/GoogleCalendarIntegration';
+import { v4 as uuidv4 } from 'uuid';
 
 const ProfilePage = () => {
   const { user } = useAuth();
@@ -22,6 +24,9 @@ const ProfilePage = () => {
   const [lastName, setLastName] = useState("");
   const [loading, setLoading] = useState(false);
   const [profileLoading, setProfileLoading] = useState(true);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [isCalendarConnected, setIsCalendarConnected] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -30,7 +35,7 @@ const ProfilePage = () => {
       try {
         const { data, error } = await supabase
           .from('profiles')
-          .select('first_name, last_name')
+          .select('first_name, last_name, avatar_url, is_calendar_connected')
           .eq('id', user.id)
           .single();
           
@@ -39,6 +44,8 @@ const ProfilePage = () => {
         if (data) {
           setFirstName(data.first_name || "");
           setLastName(data.last_name || "");
+          setAvatarUrl(data.avatar_url);
+          setIsCalendarConnected(data.is_calendar_connected || false);
         }
       } catch (error) {
         console.error('Error fetching profile:', error);
@@ -89,6 +96,86 @@ const ProfilePage = () => {
     }
   };
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0 || !user) return;
+    
+    const file = files[0];
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${uuidv4()}.${fileExt}`;
+    const filePath = `${user.id}/${fileName}`;
+    
+    setUploadingAvatar(true);
+    
+    try {
+      // Upload the file to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+        
+      if (uploadError) throw uploadError;
+      
+      // Get the public URL
+      const { data: urlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+        
+      const avatarUrl = urlData.publicUrl;
+      
+      // Update the user's profile with the avatar URL
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ 
+          avatar_url: avatarUrl,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', user.id);
+        
+      if (updateError) throw updateError;
+      
+      setAvatarUrl(avatarUrl);
+      
+      toast({
+        title: "Avatar updated",
+        description: "Your profile picture has been updated successfully.",
+      });
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      toast({
+        title: "Error uploading avatar",
+        description: "Could not upload your profile picture.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const handleCalendarStatusChange = async (connected: boolean) => {
+    if (!user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ 
+          is_calendar_connected: connected,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', user.id);
+        
+      if (error) throw error;
+      
+      setIsCalendarConnected(connected);
+    } catch (error) {
+      console.error('Error updating calendar connection status:', error);
+      toast({
+        title: "Error updating calendar connection",
+        description: "Could not update your calendar connection status.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getInitials = () => {
     if (firstName && lastName) {
       return `${firstName[0]}${lastName[0]}`.toUpperCase();
@@ -118,12 +205,32 @@ const ProfilePage = () => {
         <div className="md:col-span-1">
           <Card className="bg-gradient-to-b from-lavender-50 to-background dark:from-lavender-900/30 dark:to-background">
             <CardContent className="pt-6 flex flex-col items-center">
-              <Avatar className="h-24 w-24 border-4 border-white dark:border-gray-800 shadow-lg">
-                <AvatarImage src={user?.user_metadata?.avatar_url || ''} alt="Profile" />
-                <AvatarFallback className="bg-lavender-200 text-lavender-600 dark:bg-lavender-800 dark:text-lavender-200 text-xl">
-                  {getInitials()}
-                </AvatarFallback>
-              </Avatar>
+              <div className="relative">
+                <Avatar className="h-24 w-24 border-4 border-white dark:border-gray-800 shadow-lg">
+                  <AvatarImage src={avatarUrl || user?.user_metadata?.avatar_url || ''} alt="Profile" />
+                  <AvatarFallback className="bg-lavender-200 text-lavender-600 dark:bg-lavender-800 dark:text-lavender-200 text-xl">
+                    {getInitials()}
+                  </AvatarFallback>
+                </Avatar>
+                <label 
+                  htmlFor="avatar-upload" 
+                  className="absolute -bottom-2 -right-2 bg-primary text-white p-2 rounded-full cursor-pointer hover:bg-primary/90 transition-colors"
+                >
+                  {uploadingAvatar ? (
+                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                  ) : (
+                    <Camera className="h-4 w-4" />
+                  )}
+                </label>
+                <input 
+                  id="avatar-upload" 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handleAvatarUpload} 
+                  className="hidden"
+                  disabled={uploadingAvatar}
+                />
+              </div>
               <h2 className="mt-4 text-xl font-semibold text-center">
                 {firstName && lastName 
                   ? `${firstName} ${lastName}`
@@ -152,6 +259,7 @@ const ProfilePage = () => {
           <Tabs defaultValue="personal" className="w-full">
             <TabsList className="mb-6">
               <TabsTrigger value="personal">Personal Info</TabsTrigger>
+              <TabsTrigger value="integrations">Integrations</TabsTrigger>
               <TabsTrigger value="activity">Recent Activity</TabsTrigger>
             </TabsList>
             
@@ -245,6 +353,17 @@ const ProfilePage = () => {
                   </CardFooter>
                 </form>
               </Card>
+            </TabsContent>
+            
+            <TabsContent value="integrations">
+              <div className="space-y-6">
+                <GoogleCalendarIntegration 
+                  isConnected={isCalendarConnected} 
+                  onStatusChange={handleCalendarStatusChange} 
+                />
+                
+                {/* Can add more integrations here in the future */}
+              </div>
             </TabsContent>
             
             <TabsContent value="activity">
