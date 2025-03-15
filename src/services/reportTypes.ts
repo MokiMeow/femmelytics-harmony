@@ -18,3 +18,36 @@ export interface ChartData {
   xAxisLabel?: string;
   yAxisLabel?: string;
 }
+
+// Type definitions for chart generation
+export interface PieChartData {
+  labels: string[];
+  values: number[];
+}
+
+export interface LineChartData {
+  labels: string[];
+  datasets: Array<{
+    label: string;
+    data: number[];
+    borderColor: string;
+    backgroundColor: string;
+    tension?: number;
+  }>;
+  xAxisLabel?: string;
+  yAxisLabel?: string;
+}
+
+export interface BarChartData {
+  labels: string[];
+  datasets: Array<{
+    label: string;
+    data: number[];
+    backgroundColor: string;
+    borderColor?: string;
+    borderWidth?: number;
+    borderRadius?: number;
+  }>;
+  xAxisLabel?: string;
+  yAxisLabel?: string;
+}
