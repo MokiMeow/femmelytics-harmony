@@ -33,25 +33,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     fetchUser();
 
-    // Store a flag in sessionStorage to track explicit sign-ins
-    const isInitialPageLoad = sessionStorage.getItem('initialPageLoad') !== 'done';
-    if (isInitialPageLoad) {
-      sessionStorage.setItem('initialPageLoad', 'done');
-    }
+    // Track explicit sign-ins across browser sessions with localStorage instead of sessionStorage
+    const hasShownWelcomeToast = localStorage.getItem('hasShownWelcomeToast') === 'true';
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (session?.user) {
           setUser(session.user);
-          // Only show welcome toast on explicit SIGNED_IN event, not on session recovery
-          if (event === 'SIGNED_IN' && !isInitialPageLoad) {
+          
+          // Only show welcome toast on explicit SIGNED_IN event and if we haven't shown it already
+          if (event === 'SIGNED_IN' && !hasShownWelcomeToast) {
             toast({
               title: "Welcome back!",
               description: "You have successfully signed in.",
             });
+            localStorage.setItem('hasShownWelcomeToast', 'true');
           }
         } else {
           setUser(null);
+          // Clear the flag when user signs out
+          if (event === 'SIGNED_OUT') {
+            localStorage.removeItem('hasShownWelcomeToast');
+          }
         }
         setLoading(false);
       }
@@ -105,6 +108,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw error;
       }
 
+      // Remove this line as we're handling the toast in the onAuthStateChange
+      // localStorage.setItem('hasShownWelcomeToast', 'false');
+      
       return data;
     } catch (error: any) {
       console.error('Error signing in:', error.message);
