@@ -18,26 +18,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Fetch current session on mount
+  // Helper to update user state based on current session
+  const updateUserFromSession = async () => {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) {
+      console.error("Error fetching session:", error);
+      return;
+    }
+    setUser(data?.session?.user || null);
+  };
+
   useEffect(() => {
-    const fetchSession = async () => {
+    // Initially fetch session
+    (async () => {
       setLoading(true);
-      const { data, error } = await supabase.auth.getSession();
-      if (error) console.error('Error fetching session:', error);
-      setUser(data?.session?.user || null);
+      await updateUserFromSession();
       setLoading(false);
-    };
+    })();
 
-    fetchSession();
-
+    // Listen to auth state changes
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log(`Auth event: ${event}`, session);
-      setUser(session?.user || null);
-      setLoading(false);
+      // Clear current user state to force re-render with new data
+      setUser(null);
+      setLoading(true);
+      
+      // Use a short delay to ensure the cache is cleared before updating
+      setTimeout(async () => {
+        await updateUserFromSession();
+        setLoading(false);
+      }, 100);
 
+      // Show welcome toast only once per account (using user.id as key)
       if (event === 'SIGNED_IN' && session?.user) {
-        // Check if welcome toast was already shown for this account
-        const welcomeKey = `welcomeToastShown-${session.user.email}`;
+        const welcomeKey = `welcomeToastShown-${session.user.id}`;
         if (!localStorage.getItem(welcomeKey)) {
           toast({
             title: "Welcome back!",
@@ -45,9 +58,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           });
           localStorage.setItem(welcomeKey, 'true');
         }
-      } else if (event === 'SIGNED_OUT') {
-        // On sign-out, clear the user state and navigate away
-        setUser(null);
+      }
+
+      // On sign-out, show toast and navigate home
+      if (event === 'SIGNED_OUT') {
+        toast({
+          title: 'Signed out successfully',
+          description: 'You have been signed out of your account.',
+        });
         navigate('/');
       }
     });
@@ -68,7 +86,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
         throw error;
       }
-      // The auth listener will pick up the new session so no need to manually update user
+      // The auth listener will update the state on a new session.
       return data;
     } catch (error: any) {
       console.error('Error signing up:', error.message);
@@ -78,10 +96,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signIn = async (email: string, password: string) => {
     try {
-      // For development purposes, hardcode credentials if email matches
+      // For development purposes, if the email matches, hardcode credentials
       const actualEmail = email === 'mack@gmail.com' ? 'mack@gmail.com' : email;
       const actualPassword = email === 'mack@gmail.com' ? 'mohithtony' : password;
-      
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email: actualEmail,
         password: actualPassword,
@@ -94,7 +112,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
         throw error;
       }
-      // The auth listener will handle updating the state
+      // The auth listener will update state when the session changes.
       return data;
     } catch (error: any) {
       console.error('Error signing in:', error.message);
@@ -106,7 +124,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      // The auth listener will clear the user state and navigate away
+      // No need to manually clear user; the listener will update state.
     } catch (error: any) {
       console.error('Error signing out:', error.message);
       toast({
