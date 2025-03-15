@@ -8,9 +8,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, FileText } from 'lucide-react';
+import { Loader2, FileText, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { generateReport, ExportDataType, ExportPeriod } from '@/services/reportService';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface ExportReportDialogProps {
   open: boolean;
@@ -84,9 +85,9 @@ const ExportReportDialog = ({ open, onOpenChange }: ExportReportDialogProps) => 
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
-          <DialogTitle>Export Health Report</DialogTitle>
+          <DialogTitle className="text-xl">Export Health Report</DialogTitle>
           <DialogDescription>
             Create a detailed report of your health data to share with healthcare providers.
           </DialogDescription>
@@ -118,7 +119,7 @@ const ExportReportDialog = ({ open, onOpenChange }: ExportReportDialogProps) => 
               
               <div>
                 <h3 className="text-sm font-medium mb-2">Data to Include</h3>
-                <div className="space-y-2">
+                <div className="space-y-3 pl-1">
                   <div className="flex items-center space-x-2">
                     <Checkbox 
                       id="all" 
@@ -180,7 +181,7 @@ const ExportReportDialog = ({ open, onOpenChange }: ExportReportDialogProps) => 
             </div>
           </TabsContent>
           
-          <TabsContent value="options" className="space-y-4 mt-4">
+          <TabsContent value="options" className="space-y-6 mt-4">
             <div className="space-y-4">
               <div className="flex items-center space-x-2">
                 <Checkbox 
@@ -201,12 +202,22 @@ const ExportReportDialog = ({ open, onOpenChange }: ExportReportDialogProps) => 
               </div>
               
               {includeSummary && (
-                <div className="text-sm text-muted-foreground bg-muted p-3 rounded-md">
-                  The AI summary will analyze your health data and provide insights about patterns, 
-                  trends, and potential correlations between different aspects of your health. 
-                  This can be useful for healthcare providers.
+                <div className="text-sm text-muted-foreground bg-muted/50 p-4 rounded-md border border-muted">
+                  <p className="mb-2">The AI summary will analyze your health data and provide insights about:</p>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>Patterns in your symptoms and cycle data</li>
+                    <li>Potential correlations between tracked metrics</li>
+                    <li>Suggestions for discussion with healthcare providers</li>
+                  </ul>
                 </div>
               )}
+              
+              <Alert className="bg-amber-50 border-amber-200 dark:bg-yellow-900/20">
+                <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                <AlertDescription className="text-amber-800 dark:text-amber-300">
+                  PDF generation may take a few moments depending on the amount of data and chart options selected.
+                </AlertDescription>
+              </Alert>
             </div>
           </TabsContent>
         </Tabs>

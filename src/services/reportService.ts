@@ -52,6 +52,7 @@ export const generateReport = async (options: ExportOptions): Promise<Blob> => {
   
   if (options.dataTypes.includes('all') || options.dataTypes.includes('medications')) {
     reportData.medicationsData = await fetchActiveMedications();
+    reportData.medicationHistoryData = await fetchMedicationHistoryData(userId, startDate, endDate);
   }
   
   if (options.includeSummary) {
@@ -101,6 +102,19 @@ const fetchMoodData = async (userId: string, startDate: Date, endDate: Date) => 
   return data || [];
 };
 
+const fetchMedicationHistoryData = async (userId: string, startDate: Date, endDate: Date) => {
+  const { data, error } = await supabase
+    .from('medication_history')
+    .select('*, medications(name, dosage, frequency)')
+    .eq('user_id', userId)
+    .gte('taken_at', startDate.toISOString())
+    .lte('taken_at', endDate.toISOString())
+    .order('taken_at', { ascending: false });
+    
+  if (error) throw error;
+  return data || [];
+};
+
 const generateAISummary = async (reportData: any): Promise<string> => {
   try {
     const { data, error } = await supabase.functions.invoke('generate-report-summary', {
@@ -126,8 +140,8 @@ const generateChartAsBase64 = (canvasId: string, chartData: any, chartType: stri
       // Create a canvas with a "No data" message instead of a chart
       const canvas = document.createElement('canvas');
       canvas.id = canvasId;
-      canvas.width = 400;
-      canvas.height = 200;
+      canvas.width = 800;  // Increased for better resolution
+      canvas.height = 400; // Increased for better resolution
       document.body.appendChild(canvas);
       
       const ctx = canvas.getContext('2d');
@@ -135,13 +149,13 @@ const generateChartAsBase64 = (canvasId: string, chartData: any, chartType: stri
         ctx.fillStyle = '#f5f5f5';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        ctx.font = 'bold 16px Arial';
+        ctx.font = 'bold 24px Arial'; // Increased font size
         ctx.fillStyle = '#666666';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(title, canvas.width / 2, 30);
+        ctx.fillText(title, canvas.width / 2, 60);
         
-        ctx.font = '14px Arial';
+        ctx.font = '20px Arial'; // Increased font size
         ctx.fillText('Not sufficient data to create this chart', canvas.width / 2, canvas.height / 2);
       }
       
@@ -153,8 +167,8 @@ const generateChartAsBase64 = (canvasId: string, chartData: any, chartType: stri
     
     const canvas = document.createElement('canvas');
     canvas.id = canvasId;
-    canvas.width = 400;
-    canvas.height = 220;
+    canvas.width = 800;  // Increased for better resolution
+    canvas.height = 440; // Increased for better resolution
     canvas.style.display = 'none';
     document.body.appendChild(canvas);
     
@@ -163,6 +177,13 @@ const generateChartAsBase64 = (canvasId: string, chartData: any, chartType: stri
       throw new Error('Could not get canvas context');
     }
     
+    // Set device pixel ratio for better resolution
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+    
     let chart;
     
     if (chartType === 'line') {
@@ -170,7 +191,12 @@ const generateChartAsBase64 = (canvasId: string, chartData: any, chartType: stri
         type: 'line',
         data: {
           labels: chartData.labels,
-          datasets: chartData.datasets,
+          datasets: chartData.datasets.map((dataset: any) => ({
+            ...dataset,
+            borderWidth: 3,  // Thicker lines
+            pointRadius: 5,  // Larger points
+            pointHoverRadius: 8
+          })),
         },
         options: {
           responsive: false,
@@ -180,20 +206,21 @@ const generateChartAsBase64 = (canvasId: string, chartData: any, chartType: stri
               display: true,
               text: title,
               font: {
-                size: 14,
+                size: 22,  // Larger title
+                weight: 'bold'
               },
               padding: {
-                top: 10,
-                bottom: 10
+                top: 20,
+                bottom: 20
               }
             },
             legend: {
               position: 'top',
               labels: {
-                boxWidth: 12,
-                padding: 10,
+                boxWidth: 20,  // Larger legend boxes
+                padding: 20,
                 font: {
-                  size: 11
+                  size: 16  // Larger legend text
                 }
               }
             },
@@ -205,13 +232,18 @@ const generateChartAsBase64 = (canvasId: string, chartData: any, chartType: stri
                 display: true,
                 text: chartData.yAxisLabel || 'Value',
                 font: {
-                  size: 11
+                  size: 16,  // Larger axis title
+                  weight: 'bold'
                 }
               },
               ticks: {
                 font: {
-                  size: 10
-                }
+                  size: 14  // Larger tick labels
+                },
+                padding: 10
+              },
+              grid: {
+                color: 'rgba(200, 200, 200, 0.3)'  // Lighter grid lines
               }
             },
             x: {
@@ -219,13 +251,18 @@ const generateChartAsBase64 = (canvasId: string, chartData: any, chartType: stri
                 display: true,
                 text: chartData.xAxisLabel || 'Date',
                 font: {
-                  size: 11
+                  size: 16,  // Larger axis title
+                  weight: 'bold'
                 }
               },
               ticks: {
                 font: {
-                  size: 10
-                }
+                  size: 14  // Larger tick labels
+                },
+                padding: 10
+              },
+              grid: {
+                color: 'rgba(200, 200, 200, 0.3)'  // Lighter grid lines
               }
             }
           },
@@ -240,16 +277,19 @@ const generateChartAsBase64 = (canvasId: string, chartData: any, chartType: stri
           datasets: [{
             data: chartData.values,
             backgroundColor: [
-              'rgba(255, 99, 132, 0.6)',
-              'rgba(54, 162, 235, 0.6)',
-              'rgba(255, 206, 86, 0.6)',
-              'rgba(75, 192, 192, 0.6)',
-              'rgba(153, 102, 255, 0.6)',
-              'rgba(255, 159, 64, 0.6)',
-              'rgba(199, 199, 199, 0.6)',
-              'rgba(83, 102, 255, 0.6)',
+              'rgba(255, 99, 132, 0.8)',
+              'rgba(54, 162, 235, 0.8)',
+              'rgba(255, 206, 86, 0.8)',
+              'rgba(75, 192, 192, 0.8)',
+              'rgba(153, 102, 255, 0.8)',
+              'rgba(255, 159, 64, 0.8)',
+              'rgba(199, 199, 199, 0.8)',
+              'rgba(83, 102, 255, 0.8)',
+              'rgba(40, 167, 69, 0.8)',
+              'rgba(220, 53, 69, 0.8)',
             ],
-            borderWidth: 1
+            borderWidth: 2,
+            borderColor: '#fff'
           }]
         },
         options: {
@@ -260,23 +300,32 @@ const generateChartAsBase64 = (canvasId: string, chartData: any, chartType: stri
               display: true,
               text: title,
               font: {
-                size: 14,
+                size: 22,  // Larger title
+                weight: 'bold'
               },
               padding: {
-                top: 10,
-                bottom: 10
+                top: 20,
+                bottom: 20
               }
             },
             legend: {
               position: 'right',
               labels: {
-                boxWidth: 12,
-                padding: 10,
+                boxWidth: 20,  // Larger legend boxes
+                padding: 15,
                 font: {
-                  size: 10
+                  size: 14  // Larger legend text
                 }
               }
             },
+            tooltip: {
+              bodyFont: {
+                size: 14
+              },
+              titleFont: {
+                size: 16
+              }
+            }
           },
           animation: false
         }
@@ -286,7 +335,12 @@ const generateChartAsBase64 = (canvasId: string, chartData: any, chartType: stri
         type: 'bar',
         data: {
           labels: chartData.labels,
-          datasets: chartData.datasets,
+          datasets: chartData.datasets.map((dataset: any) => ({
+            ...dataset,
+            borderWidth: 2,
+            borderRadius: 4,  // Rounded bars
+            maxBarThickness: 50  // Thicker bars
+          })),
         },
         options: {
           responsive: false,
@@ -296,20 +350,21 @@ const generateChartAsBase64 = (canvasId: string, chartData: any, chartType: stri
               display: true,
               text: title,
               font: {
-                size: 14,
+                size: 22,  // Larger title
+                weight: 'bold'
               },
               padding: {
-                top: 10,
-                bottom: 10
+                top: 20,
+                bottom: 20
               }
             },
             legend: {
               position: 'top',
               labels: {
-                boxWidth: 12,
-                padding: 10,
+                boxWidth: 20,  // Larger legend boxes
+                padding: 15,
                 font: {
-                  size: 11
+                  size: 16  // Larger legend text
                 }
               }
             },
@@ -321,20 +376,29 @@ const generateChartAsBase64 = (canvasId: string, chartData: any, chartType: stri
                 display: true,
                 text: chartData.yAxisLabel || 'Value',
                 font: {
-                  size: 11
+                  size: 16,  // Larger axis title
+                  weight: 'bold'
                 }
               },
               ticks: {
                 font: {
-                  size: 10
-                }
+                  size: 14  // Larger tick labels
+                },
+                padding: 10
+              },
+              grid: {
+                color: 'rgba(200, 200, 200, 0.3)'  // Lighter grid lines
               }
             },
             x: {
               ticks: {
                 font: {
-                  size: 10
-                }
+                  size: 14  // Larger tick labels
+                },
+                padding: 10
+              },
+              grid: {
+                color: 'rgba(200, 200, 200, 0.3)'  // Lighter grid lines
               }
             }
           },
@@ -343,7 +407,7 @@ const generateChartAsBase64 = (canvasId: string, chartData: any, chartType: stri
       });
     }
     
-    const imgData = canvas.toDataURL('image/png');
+    const imgData = canvas.toDataURL('image/png', 1.0);  // Maximum quality
     
     if (chart) {
       chart.destroy();
@@ -410,21 +474,188 @@ const prepareCyclePhaseChartData = (cycleData: any[]): any => {
   };
 };
 
+const prepareMedicationAdherenceChartData = (medicationsData: any[], medicationHistoryData: any[]): any => {
+  // Group medication history by medication id
+  const medicationGroups: {[key: string]: any[]} = {};
+  medicationHistoryData.forEach(entry => {
+    const medId = entry.medication_id;
+    if (!medicationGroups[medId]) {
+      medicationGroups[medId] = [];
+    }
+    medicationGroups[medId].push(entry);
+  });
+  
+  // Calculate adherence percentage for each medication
+  const medicationNames: string[] = [];
+  const adherenceValues: number[] = [];
+  
+  medicationsData.forEach(med => {
+    if (med.id) {
+      const history = medicationGroups[med.id] || [];
+      // Simplified calculation - percentage of days in the period the medication was taken
+      const takenDays = new Set(history.map(h => h.taken_at.split('T')[0])).size;
+      const totalPossibleDays = 30; // Assuming a 30-day period
+      const adherence = Math.round((takenDays / totalPossibleDays) * 100);
+      
+      medicationNames.push(med.name);
+      adherenceValues.push(adherence);
+    }
+  });
+  
+  return {
+    labels: medicationNames,
+    datasets: [{
+      label: 'Adherence (%)',
+      data: adherenceValues,
+      backgroundColor: 'rgba(75, 192, 192, 0.7)',
+      borderColor: 'rgba(75, 192, 192, 1)',
+      borderWidth: 2,
+      borderRadius: 4,
+    }],
+    yAxisLabel: 'Adherence (%)',
+  };
+};
+
 const createPDFReport = async (reportData: any, includeCharts: boolean): Promise<Blob> => {
-  const doc = new jsPDF();
+  // Create PDF with better formatting and organization
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4',
+  });
   
-  doc.setFontSize(20);
-  doc.text('Health Report', 105, 15, { align: 'center' });
+  // Add custom header/footer if desired
+  const pageWidth = doc.internal.pageSize.width;
+  const pageHeight = doc.internal.pageSize.height;
   
+  // Add header with app name and border
+  doc.setFillColor(100, 45, 161); // Primary color
+  doc.rect(0, 0, pageWidth, 20, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.text('Femmelytics Health Report', pageWidth / 2, 12, { align: 'center' });
+  
+  // Add footer with date
+  doc.setDrawColor(200, 200, 200);
+  doc.line(10, pageHeight - 15, pageWidth - 10, pageHeight - 15);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(100, 100, 100);
+  doc.text(`Generated on: ${format(new Date(), 'MMMM d, yyyy')}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+  doc.text(`Page ${1}`, pageWidth - 20, pageHeight - 10);
+  
+  // Reset text color for body
+  doc.setTextColor(0, 0, 0);
+  
+  // Title page content
+  doc.setFontSize(24);
+  doc.text('Health Report', 105, 50, { align: 'center' });
+  
+  doc.setFontSize(14);
+  doc.text(`Date Range: ${format(new Date(reportData.startDate), 'MMMM d, yyyy')} - ${format(new Date(reportData.endDate), 'MMMM d, yyyy')}`, 105, 65, { align: 'center' });
+  
+  // Add a visual divider
+  doc.setDrawColor(100, 45, 161);
+  doc.setLineWidth(0.5);
+  doc.line(40, 75, 170, 75);
+  
+  // Add a subtitle about the report content
   doc.setFontSize(12);
-  doc.text(`Date Range: ${format(new Date(reportData.startDate), 'MMM d, yyyy')} - ${format(new Date(reportData.endDate), 'MMM d, yyyy')}`, 105, 25, { align: 'center' });
+  doc.setFont('helvetica', 'italic');
+  doc.text('This report contains your health tracking data for the selected period.', 105, 85, { align: 'center' });
+  doc.text('Use it to monitor patterns and share insights with healthcare providers.', 105, 92, { align: 'center' });
   
-  let yPosition = 35;
+  let yPosition = 110;
+  
+  // Add table of contents
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.text('Report Contents:', 20, yPosition);
+  yPosition += 10;
+  
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(12);
+  let contentIndex = 1;
+  
+  if (reportData.cycleData && reportData.cycleData.length > 0) {
+    doc.text(`${contentIndex}. Menstrual Cycle Data`, 25, yPosition);
+    yPosition += 8;
+    contentIndex++;
+  }
+  
+  if (reportData.symptomsData && reportData.symptomsData.length > 0) {
+    doc.text(`${contentIndex}. Symptoms Data`, 25, yPosition);
+    yPosition += 8;
+    contentIndex++;
+  }
+  
+  if (reportData.moodData && reportData.moodData.length > 0) {
+    doc.text(`${contentIndex}. Mood & Energy Data`, 25, yPosition);
+    yPosition += 8;
+    contentIndex++;
+  }
+  
+  if (reportData.medicationsData && reportData.medicationsData.length > 0) {
+    doc.text(`${contentIndex}. Medications Data`, 25, yPosition);
+    yPosition += 8;
+    contentIndex++;
+  }
+  
+  if (reportData.summary) {
+    doc.text(`${contentIndex}. Health Summary (AI Generated)`, 25, yPosition);
+    yPosition += 8;
+  }
+  
+  // Start new page for report content
+  doc.addPage();
+  
+  let currentPage = 2;
+  // Add header and footer to all pages
+  const addHeaderFooter = (pageNumber: number) => {
+    doc.setFillColor(100, 45, 161); // Primary color
+    doc.rect(0, 0, pageWidth, 15, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.text('Femmelytics Health Report', pageWidth / 2, 10, { align: 'center' });
+    
+    doc.setDrawColor(200, 200, 200);
+    doc.line(10, pageHeight - 15, pageWidth - 10, pageHeight - 15);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Generated on: ${format(new Date(), 'MMMM d, yyyy')}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+    doc.text(`Page ${pageNumber}`, pageWidth - 20, pageHeight - 10);
+    
+    // Reset text color for body
+    doc.setTextColor(0, 0, 0);
+  };
+  
+  addHeaderFooter(currentPage);
+  
+  // Function to handle page breaks and header/footer
+  const checkPageBreak = (minRemainingSpace: number) => {
+    const currentPosition = doc.internal.getCurrentPosition();
+    if (currentPosition.y > pageHeight - minRemainingSpace) {
+      doc.addPage();
+      currentPage++;
+      addHeaderFooter(currentPage);
+      return 25; // New Y position after page break
+    }
+    return currentPosition.y;
+  };
+  
+  yPosition = 25;
   
   if (reportData.cycleData && reportData.cycleData.length > 0) {
     doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
     doc.text('Menstrual Cycle Data', 14, yPosition);
     yPosition += 10;
+    
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
     
     const cycleTableData = reportData.cycleData.map((entry: any) => [
       format(new Date(entry.date), 'MMM d, yyyy'),
@@ -436,18 +667,24 @@ const createPDFReport = async (reportData: any, includeCharts: boolean): Promise
     autoTable(doc, {
       head: [['Date', 'Phase', 'Flow', 'Notes']],
       body: cycleTableData,
-      startY: yPosition
+      startY: yPosition,
+      headStyles: {
+        fillColor: [180, 120, 220],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+      },
+      alternateRowStyles: {
+        fillColor: [245, 245, 255],
+      },
     });
     
     yPosition = (doc as any).lastAutoTable.finalY + 15;
     
     if (includeCharts) {
-      if (yPosition > 180) {
-        doc.addPage();
-        yPosition = 20;
-      }
+      yPosition = checkPageBreak(120);
       
       doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
       doc.text('Cycle Phase Distribution', 14, yPosition);
       yPosition += 10;
       
@@ -461,45 +698,56 @@ const createPDFReport = async (reportData: any, includeCharts: boolean): Promise
           'Cycle Phase Distribution'
         );
         
-        doc.addImage(chartImgData, 'PNG', 15, yPosition, 180, 100);
-        yPosition += 110;
+        // Add the image at a higher quality and better size ratio
+        const imgWidth = 170;
+        const imgHeight = 90;
+        doc.addImage(chartImgData, 'PNG', (pageWidth - imgWidth) / 2, yPosition, imgWidth, imgHeight);
+        yPosition += imgHeight + 20;
       } catch (error) {
         console.error('Error generating cycle chart:', error);
+        yPosition += 10;
       }
     }
   }
   
   if (reportData.symptomsData && reportData.symptomsData.length > 0) {
-    if (yPosition > 230) {
-      doc.addPage();
-      yPosition = 20;
-    }
+    yPosition = checkPageBreak(50);
     
     doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
     doc.text('Symptoms Data', 14, yPosition);
     yPosition += 10;
+    
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
     
     const symptomsTableData = reportData.symptomsData.map((entry: any) => [
       format(new Date(entry.date), 'MMM d, yyyy'),
       entry.symptom_type,
-      entry.severity || '-'
+      entry.severity ? `${entry.severity}/5` : '-'
     ]);
     
     autoTable(doc, {
-      head: [['Date', 'Symptom', 'Severity (1-5)']],
+      head: [['Date', 'Symptom', 'Severity']],
       body: symptomsTableData,
-      startY: yPosition
+      startY: yPosition,
+      headStyles: {
+        fillColor: [75, 192, 192],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+      },
+      alternateRowStyles: {
+        fillColor: [240, 250, 250],
+      },
     });
     
     yPosition = (doc as any).lastAutoTable.finalY + 15;
     
     if (includeCharts && reportData.symptomsData.length > 0) {
-      if (yPosition > 180) {
-        doc.addPage();
-        yPosition = 20;
-      }
+      yPosition = checkPageBreak(120);
       
       doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
       doc.text('Symptom Frequency', 14, yPosition);
       yPosition += 10;
       
@@ -513,46 +761,56 @@ const createPDFReport = async (reportData: any, includeCharts: boolean): Promise
           'Symptom Frequency'
         );
         
-        doc.addImage(chartImgData, 'PNG', 15, yPosition, 180, 100);
-        yPosition += 110;
+        const imgWidth = 170;
+        const imgHeight = 90;
+        doc.addImage(chartImgData, 'PNG', (pageWidth - imgWidth) / 2, yPosition, imgWidth, imgHeight);
+        yPosition += imgHeight + 20;
       } catch (error) {
         console.error('Error generating symptom chart:', error);
+        yPosition += 10;
       }
     }
   }
   
   if (reportData.moodData && reportData.moodData.length > 0) {
-    if (yPosition > 230) {
-      doc.addPage();
-      yPosition = 20;
-    }
+    yPosition = checkPageBreak(50);
     
     doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
     doc.text('Mood & Energy Data', 14, yPosition);
     yPosition += 10;
     
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
+    
     const moodTableData = reportData.moodData.map((entry: any) => [
       format(new Date(entry.date), 'MMM d, yyyy'),
-      entry.mood_score || '-',
-      entry.energy_score || '-',
+      entry.mood_score ? `${entry.mood_score}/5` : '-',
+      entry.energy_score ? `${entry.energy_score}/5` : '-',
       entry.notes || '-'
     ]);
     
     autoTable(doc, {
-      head: [['Date', 'Mood (1-5)', 'Energy (1-5)', 'Notes']],
+      head: [['Date', 'Mood', 'Energy', 'Notes']],
       body: moodTableData,
-      startY: yPosition
+      startY: yPosition,
+      headStyles: {
+        fillColor: [255, 99, 132],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+      },
+      alternateRowStyles: {
+        fillColor: [255, 240, 245],
+      },
     });
     
     yPosition = (doc as any).lastAutoTable.finalY + 15;
     
     if (includeCharts && reportData.moodData.length > 0) {
-      if (yPosition > 180) {
-        doc.addPage();
-        yPosition = 20;
-      }
+      yPosition = checkPageBreak(120);
       
       doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
       doc.text('Mood & Energy Trends', 14, yPosition);
       yPosition += 10;
       
@@ -566,23 +824,27 @@ const createPDFReport = async (reportData: any, includeCharts: boolean): Promise
           'Mood & Energy Trends'
         );
         
-        doc.addImage(chartImgData, 'PNG', 15, yPosition, 180, 100);
-        yPosition += 110;
+        const imgWidth = 170;
+        const imgHeight = 90;
+        doc.addImage(chartImgData, 'PNG', (pageWidth - imgWidth) / 2, yPosition, imgWidth, imgHeight);
+        yPosition += imgHeight + 20;
       } catch (error) {
         console.error('Error generating mood chart:', error);
+        yPosition += 10;
       }
     }
   }
   
   if (reportData.medicationsData && reportData.medicationsData.length > 0) {
-    if (yPosition > 230) {
-      doc.addPage();
-      yPosition = 20;
-    }
+    yPosition = checkPageBreak(50);
     
     doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
     doc.text('Medications', 14, yPosition);
     yPosition += 10;
+    
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
     
     const medicationsTableData = reportData.medicationsData.map((entry: any) => [
       entry.name,
@@ -598,22 +860,65 @@ const createPDFReport = async (reportData: any, includeCharts: boolean): Promise
       head: [['Name', 'Dosage', 'Frequency', 'Time', 'Start Date', 'End Date', 'Notes']],
       body: medicationsTableData,
       startY: yPosition,
+      headStyles: {
+        fillColor: [54, 162, 235],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+      },
+      alternateRowStyles: {
+        fillColor: [240, 245, 255],
+      },
       styles: { cellWidth: 'auto' },
       columnStyles: { 6: { cellWidth: 40 } }
     });
     
     yPosition = (doc as any).lastAutoTable.finalY + 15;
+    
+    // Add medication adherence chart if history data is available
+    if (includeCharts && reportData.medicationHistoryData && reportData.medicationHistoryData.length > 0) {
+      yPosition = checkPageBreak(120);
+      
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Medication Adherence', 14, yPosition);
+      yPosition += 10;
+      
+      const medicationChartData = prepareMedicationAdherenceChartData(
+        reportData.medicationsData, 
+        reportData.medicationHistoryData
+      );
+      
+      try {
+        const chartImgData = await generateChartAsBase64(
+          'medication-chart', 
+          medicationChartData, 
+          'bar', 
+          'Medication Adherence (%)'
+        );
+        
+        const imgWidth = 170;
+        const imgHeight = 90;
+        doc.addImage(chartImgData, 'PNG', (pageWidth - imgWidth) / 2, yPosition, imgWidth, imgHeight);
+        yPosition += imgHeight + 20;
+      } catch (error) {
+        console.error('Error generating medication chart:', error);
+        yPosition += 10;
+      }
+    }
   }
   
   if (reportData.summary) {
-    doc.addPage();
+    yPosition = checkPageBreak(30);
     
     doc.setFontSize(16);
-    doc.text('Health Summary (AI Generated)', 14, 20);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Health Summary (AI Generated)', 14, yPosition);
+    yPosition += 10;
     
     doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
     const splitText = doc.splitTextToSize(reportData.summary, 180);
-    doc.text(splitText, 14, 35);
+    doc.text(splitText, 14, yPosition);
   }
   
   return doc.output('blob');
