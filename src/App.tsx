@@ -80,7 +80,7 @@ const App = () => (
                 <Medications />
               </ProtectedRoute>
             } />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTEs */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
