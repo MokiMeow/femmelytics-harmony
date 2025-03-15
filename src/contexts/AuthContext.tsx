@@ -19,61 +19,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Function to refresh user data - we'll call this when needed
-  const refreshUserData = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase.auth.getUser();
-      
-      if (error) {
-        console.error('Error refreshing user data:', error);
-        setUser(null);
-      } else {
-        console.log('User data refreshed:', data.user?.email);
-        setUser(data.user);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    console.log('AuthProvider initializing');
-    
-    // Initial user fetch on component mount
-    refreshUserData();
+    const fetchUser = async () => {
+      try {
+        const { data } = await supabase.auth.getUser();
+        setUser(data.user);
+      } catch (error) {
+        console.error('Error fetching user:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    // Set up auth state change listener with immediate callback
+    fetchUser();
+
+    // Track explicit sign-ins across browser sessions with localStorage instead of sessionStorage
+    const hasShownWelcomeToast = localStorage.getItem('hasShownWelcomeToast') === 'true';
+
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state change event:', event, 'User:', session?.user?.email);
-        
-        // Important: Force a complete refresh of user data on any auth event
-        if (event) {
-          // Clear any previous user data immediately on auth events before fetching new data
-          if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
-            setUser(null);
-            localStorage.removeItem('hasShownWelcomeToast');
-          }
+        if (session?.user) {
+          setUser(session.user);
           
-          // For any auth event, get fresh user data
-          await refreshUserData();
-          
-          // Handle toast messages for sign in
-          if (event === 'SIGNED_IN' && session?.user && !localStorage.getItem('hasShownWelcomeToast')) {
+          // Only show welcome toast on explicit SIGNED_IN event and if we haven't shown it already
+          if (event === 'SIGNED_IN' && !hasShownWelcomeToast) {
             toast({
               title: "Welcome back!",
               description: "You have successfully signed in.",
             });
             localStorage.setItem('hasShownWelcomeToast', 'true');
           }
+        } else {
+          setUser(null);
+          // Clear the flag when user signs out
+          if (event === 'SIGNED_OUT') {
+            localStorage.removeItem('hasShownWelcomeToast');
+          }
         }
+        setLoading(false);
       }
     );
 
-    // Cleanup function
     return () => {
-      console.log('AuthProvider cleanup');
       authListener.subscription.unsubscribe();
     };
   }, []);
@@ -103,9 +90,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signIn = async (email: string, password: string) => {
     try {
-      // Clear the welcome toast flag before signing in
-      localStorage.removeItem('hasShownWelcomeToast');
-      
       // For development purposes, we'll hardcode mack@gmail.com credentials
       const actualEmail = email === 'mack@gmail.com' ? 'mack@gmail.com' : email;
       const actualPassword = email === 'mack@gmail.com' ? 'mohithtony' : password;
@@ -123,9 +107,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
         throw error;
       }
-      
-      // Force an immediate user data refresh after sign in
-      await refreshUserData();
+
+      // Remove this line as we're handling the toast in the onAuthStateChange
+      // localStorage.setItem('hasShownWelcomeToast', 'false');
       
       return data;
     } catch (error: any) {
@@ -138,16 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      
-      // Clear user state immediately
-      setUser(null);
-      
-      // Remove welcome toast flag
-      localStorage.removeItem('hasShownWelcomeToast');
-      
-      // Navigate to home page
       navigate('/');
-      
       toast({
         title: 'Signed out successfully',
         description: 'You have been signed out of your account.',
@@ -161,9 +136,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     }
   };
-
-  // Add this logging to see when context values change
-  console.log('AuthContext rendering with user:', user?.email, 'loading:', loading);
 
   return (
     <AuthContext.Provider
