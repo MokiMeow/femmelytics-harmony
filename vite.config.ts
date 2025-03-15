@@ -34,7 +34,9 @@ export default defineConfig(({ mode }) => ({
             'react', 
             'react-dom', 
             'react-router-dom',
-            '@tanstack/react-query'
+            '@tanstack/react-query',
+            'zod',
+            '@hookform/resolvers/zod'
           ],
         },
       },
