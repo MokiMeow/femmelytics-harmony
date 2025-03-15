@@ -23,7 +23,7 @@ const currentVersion = BUILD_TIMESTAMP.toString();
 // Check if the version has changed and reload if needed
 if (lastVersion && lastVersion !== currentVersion) {
   localStorage.setItem(CACHE_KEY, currentVersion);
-  window.location.reload(true); // Force reload from server
+  window.location.reload(); // Remove the 'true' argument here
 } else {
   localStorage.setItem(CACHE_KEY, currentVersion);
 }
