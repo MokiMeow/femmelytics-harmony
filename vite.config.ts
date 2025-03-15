@@ -5,6 +5,7 @@ import path from "path";
 // Use a static build ID instead of generating a new one each time
 const buildId = "20230512"; // Static version identifier
 
+// https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
@@ -22,10 +23,11 @@ export default defineConfig(({ mode }) => ({
     include: ['zod', '@hookform/resolvers/zod'],
   },
   build: {
+    // Add timestamp to assets for cache busting
     assetsDir: `assets_${buildId}`,
     rollupOptions: {
-      // Removed external: ['zod'],
       output: {
+        // Add content hash to file names for cache invalidation
         entryFileNames: `assets/[name]-${buildId}-[hash].js`,
         chunkFileNames: `assets/[name]-${buildId}-[hash].js`,
         assetFileNames: `assets/[name]-${buildId}-[hash].[ext]`,
@@ -42,10 +44,12 @@ export default defineConfig(({ mode }) => ({
       },
     },
   },
+  // Add unique query parameter to the index.html file
   experimental: {
     renderBuiltUrl(filename) {
       return filename + `?v=${buildId}`;
     },
   },
+  // Add base URL to make sure assets are loaded correctly
   base: '/',
 }));
