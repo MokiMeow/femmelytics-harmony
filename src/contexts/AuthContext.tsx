@@ -51,7 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Important: Force a complete refresh of user data on any auth event
         if (event) {
           // Clear any previous user data immediately on auth events before fetching new data
-          if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+          if (event === 'SIGNED_OUT') {
             setUser(null);
             localStorage.removeItem('hasShownWelcomeToast');
           }
