@@ -3,9 +3,10 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertCircle, Calendar, Loader2 } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { syncWithGoogleCalendar } from '@/services/reportService';
+import { cn } from '@/lib/utils';
 
 interface GoogleCalendarIntegrationProps {
   isConnected: boolean;
@@ -69,8 +70,7 @@ const GoogleCalendarIntegration = ({ isConnected, onStatusChange }: GoogleCalend
           if (success) {
             toast({
               title: "Calendar Connected",
-              description: "Your cycle predictions have been synced to Google Calendar",
-              variant: "success"
+              description: "Your cycle predictions have been synced to Google Calendar"
             });
             
             if (onStatusChange) {

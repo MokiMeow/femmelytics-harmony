@@ -1,10 +1,8 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { fetchActiveMedications } from './medicationService';
-import { ChartData } from 'chart.js';
 
 export type ExportDataType = 'cycle' | 'symptoms' | 'mood' | 'medications' | 'all';
 export type ExportPeriod = 7 | 30 | 90 | 180 | 365;
