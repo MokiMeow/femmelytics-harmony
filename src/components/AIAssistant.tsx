@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
@@ -6,7 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { VolumeIcon, PlusIcon, SendIcon, MicrophoneIcon, StopCircleIcon } from 'lucide-react';
+import { VolumeIcon, PlusIcon, SendIcon, Mic, StopCircleIcon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchRecentEntries } from '@/services/trackerService';
@@ -30,7 +29,6 @@ const AIAssistant = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   
-  // Add welcome message when component mounts
   useEffect(() => {
     setMessages([
       {
@@ -42,13 +40,12 @@ const AIAssistant = () => {
     ]);
   }, []);
 
-  // Fetch user data for contextual awareness
   useEffect(() => {
     const loadUserData = async () => {
       if (!user) return;
       
       try {
-        const data = await fetchRecentEntries(90); // Get last 90 days of data
+        const data = await fetchRecentEntries(90);
         setUserData(data);
       } catch (error) {
         console.error('Error loading user data for AI assistant:', error);
@@ -58,12 +55,10 @@ const AIAssistant = () => {
     loadUserData();
   }, [user]);
   
-  // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Handle audio playback
   useEffect(() => {
     if (audioSrc && audioRef.current) {
       audioRef.current.onended = () => setIsSpeaking(false);

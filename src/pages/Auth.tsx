@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { PieChartIcon, LightbulbIcon, MessageSquareIcon } from '@/components/ui/icons';
+import Navigation from '@/components/Navigation';
 
 const Auth = () => {
   const navigate = useNavigate();

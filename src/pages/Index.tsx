@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Calendar, Sparkles, Shield, BarChart, Activity, CheckCircle } from 'lucide-react';
@@ -5,6 +6,7 @@ import { Link } from 'react-router-dom';
 import Navigation from '@/components/Navigation';
 import { fadeInUp } from '@/utils/animations';
 import Card from '@/components/Card';
+import { Button } from '@/components/ui/button';
 
 const Index = () => {
   useEffect(() => {
@@ -343,4 +345,3 @@ const Index = () => {
 };
 
 export default Index;
-
