@@ -18,49 +18,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Helper to update user state based on current session
+  // Helper: fetch current session and update user state
   const updateUserFromSession = async () => {
     const { data, error } = await supabase.auth.getSession();
     if (error) {
-      console.error("Error fetching session:", error);
+      console.error('Error fetching session:', error);
       return;
     }
     setUser(data?.session?.user || null);
   };
 
+  // Listen for auth state changes
   useEffect(() => {
-    // Initially fetch session
-    (async () => {
+    const initialize = async () => {
       setLoading(true);
       await updateUserFromSession();
       setLoading(false);
-    })();
+    };
 
-    // Listen to auth state changes
+    initialize();
+
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // Clear current user state to force re-render with new data
+      // Immediately clear the user state so that old data is removed.
       setUser(null);
       setLoading(true);
-      
-      // Use a short delay to ensure the cache is cleared before updating
+
+      // Wait a short time then update user state.
       setTimeout(async () => {
         await updateUserFromSession();
         setLoading(false);
       }, 100);
 
-      // Show welcome toast only once per account (using user.id as key)
       if (event === 'SIGNED_IN' && session?.user) {
+        // Only show welcome toast once per account (using user id)
         const welcomeKey = `welcomeToastShown-${session.user.id}`;
         if (!localStorage.getItem(welcomeKey)) {
           toast({
-            title: "Welcome back!",
-            description: "You have successfully signed in.",
+            title: 'Welcome back!',
+            description: 'You have successfully signed in.',
           });
           localStorage.setItem(welcomeKey, 'true');
         }
       }
 
-      // On sign-out, show toast and navigate home
       if (event === 'SIGNED_OUT') {
         toast({
           title: 'Signed out successfully',
@@ -80,13 +80,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) {
         toast({
-          title: "Sign up failed",
+          title: 'Sign up failed',
           description: error.message,
-          variant: "destructive",
+          variant: 'destructive',
         });
         throw error;
       }
-      // The auth listener will update the state on a new session.
+      // The auth listener will update the state on session change.
       return data;
     } catch (error: any) {
       console.error('Error signing up:', error.message);
@@ -96,23 +96,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signIn = async (email: string, password: string) => {
     try {
-      // For development purposes, if the email matches, hardcode credentials
+      // If there is already a signed-in user with a different email, sign them out first.
+      if (user && user.email !== email) {
+        await supabase.auth.signOut();
+        // Wait briefly to let the sign-out process complete.
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+
+      // For development purposes, override credentials if needed.
       const actualEmail = email === 'mack@gmail.com' ? 'mack@gmail.com' : email;
       const actualPassword = email === 'mack@gmail.com' ? 'mohithtony' : password;
-
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email: actualEmail,
         password: actualPassword,
       });
       if (error) {
         toast({
-          title: "Sign in failed",
+          title: 'Sign in failed',
           description: error.message,
-          variant: "destructive",
+          variant: 'destructive',
         });
         throw error;
       }
-      // The auth listener will update state when the session changes.
+      // The auth listener will update the user state.
       return data;
     } catch (error: any) {
       console.error('Error signing in:', error.message);
@@ -124,7 +131,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      // No need to manually clear user; the listener will update state.
+      // Auth listener will handle clearing state and navigation.
     } catch (error: any) {
       console.error('Error signing out:', error.message);
       toast({
