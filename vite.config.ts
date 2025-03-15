@@ -21,10 +21,14 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
-    // Ensure assets are properly hashed and cached
-    assetsDir: "assets",
+    // Add timestamp to assets for cache busting
+    assetsDir: `assets_${new Date().getTime()}`,
     rollupOptions: {
       output: {
+        // Add content hash to file names for cache invalidation
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]',
         manualChunks: {
           vendor: [
             'react', 
