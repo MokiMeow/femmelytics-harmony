@@ -19,6 +19,7 @@ import Journal from "./pages/Journal";
 import Forums from "./pages/Forums";
 import Library from "./pages/Library";
 import Medications from "./pages/Medications";
+import HealthResources from "./pages/HealthResources";
 
 const queryClient = new QueryClient();
 
@@ -54,6 +55,11 @@ const App = () => (
               </ProtectedRoute>
             } />
             {/* Health Resources routes */}
+            <Route path="/health-resources" element={
+              <ProtectedRoute>
+                <HealthResources />
+              </ProtectedRoute>
+            } />
             <Route path="/journal" element={
               <ProtectedRoute>
                 <Journal />

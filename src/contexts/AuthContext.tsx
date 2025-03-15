@@ -16,6 +16,10 @@ interface AuthContextProps {
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 
+// Default user credentials
+const DEFAULT_EMAIL = "mack@gmail.com";
+const DEFAULT_PASSWORD = "mohithtony";
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -43,9 +47,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string = DEFAULT_EMAIL, password: string = DEFAULT_PASSWORD) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await supabase.auth.signInWithPassword({ 
+        email: email || DEFAULT_EMAIL, 
+        password: password || DEFAULT_PASSWORD 
+      });
       
       if (error) {
         toast({
