@@ -857,4 +857,79 @@ const createPDFReport = async (reportData: any, includeCharts: boolean): Promise
     ]);
     
     autoTable(doc, {
-      head: [['Name', 'Dosage', 'Frequency', 'Time', 'Start
+      head: [['Name', 'Dosage', 'Frequency', 'Time', 'Start Date', 'End Date', 'Notes']],
+      body: medicationsTableData,
+      startY: yPosition,
+      headStyles: {
+        fillColor: [54, 162, 235],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+      },
+      alternateRowStyles: {
+        fillColor: [240, 250, 255],
+      },
+    });
+    
+    yPosition = (doc as any).lastAutoTable.finalY + 15;
+    
+    if (includeCharts && reportData.medicationsData.length > 0 && reportData.medicationHistoryData.length > 0) {
+      yPosition = checkPageBreak(120);
+      
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Medication Adherence', 14, yPosition);
+      yPosition += 10;
+      
+      const adherenceChartData = prepareMedicationAdherenceChartData(reportData.medicationsData, reportData.medicationHistoryData);
+      
+      try {
+        const chartImgData = await generateChartAsBase64(
+          'adherence-chart', 
+          adherenceChartData, 
+          'bar', 
+          'Medication Adherence'
+        );
+        
+        const imgWidth = 170;
+        const imgHeight = 90;
+        doc.addImage(chartImgData, 'PNG', (pageWidth - imgWidth) / 2, yPosition, imgWidth, imgHeight);
+        yPosition += imgHeight + 20;
+      } catch (error) {
+        console.error('Error generating adherence chart:', error);
+        yPosition += 10;
+      }
+    }
+  }
+  
+  // Add summary section if available
+  if (reportData.summary) {
+    yPosition = checkPageBreak(100);
+    
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Health Summary (AI Generated)', 14, yPosition);
+    yPosition += 10;
+    
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
+    
+    // Split long summary text into multiple lines
+    const splitText = doc.splitTextToSize(reportData.summary, pageWidth - 30);
+    doc.text(splitText, 15, yPosition);
+    
+    // Add some space after the summary
+    yPosition += splitText.length * 7 + 20;
+  }
+  
+  // Add a closing note at the end of the report
+  yPosition = checkPageBreak(30);
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'italic');
+  doc.setTextColor(100, 100, 100);
+  doc.text('This report is for informational purposes only and is not a substitute for professional medical advice.', pageWidth / 2, yPosition, { align: 'center' });
+  yPosition += 5;
+  doc.text('Always consult with healthcare professionals before making medical decisions.', pageWidth / 2, yPosition + 5, { align: 'center' });
+  
+  // Return the PDF as a Blob
+  return doc.output('blob');
+};
