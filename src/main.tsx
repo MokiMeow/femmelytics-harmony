@@ -13,9 +13,22 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// Add timestamp to force reload of resources
-const timestamp = new Date().getTime();
-console.log(`App initializing, build: ${timestamp}`);
+// Add version timestamp to force reload of resources
+const BUILD_TIMESTAMP = new Date().getTime();
+// Set a cache busting value in localStorage to detect changes
+const CACHE_KEY = 'femmelytics-cache-version';
+const lastVersion = localStorage.getItem(CACHE_KEY);
+const currentVersion = BUILD_TIMESTAMP.toString();
+
+// Check if the version has changed and reload if needed
+if (lastVersion && lastVersion !== currentVersion) {
+  localStorage.setItem(CACHE_KEY, currentVersion);
+  window.location.reload(true); // Force reload from server
+} else {
+  localStorage.setItem(CACHE_KEY, currentVersion);
+}
+
+console.log(`App initializing, build: ${BUILD_TIMESTAMP}`);
 
 // Handle initial theme to prevent theme flashing
 const setInitialTheme = () => {
@@ -41,6 +54,25 @@ const setInitialTheme = () => {
 
 // Execute theme setting before render to prevent flash
 setInitialTheme();
+
+// Add meta tags to prevent caching
+const addCacheControlMetaTags = () => {
+  const metaTags = [
+    { httpEquiv: 'Cache-Control', content: 'no-cache, no-store, must-revalidate' },
+    { httpEquiv: 'Pragma', content: 'no-cache' },
+    { httpEquiv: 'Expires', content: '0' }
+  ];
+
+  metaTags.forEach(tag => {
+    const meta = document.createElement('meta');
+    meta.httpEquiv = tag.httpEquiv;
+    meta.content = tag.content;
+    document.head.appendChild(meta);
+  });
+};
+
+// Add the cache control meta tags
+addCacheControlMetaTags();
 
 // Ensure CSS is loaded before rendering the app
 document.addEventListener('DOMContentLoaded', () => {

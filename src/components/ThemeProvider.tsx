@@ -31,6 +31,7 @@ export function ThemeProvider({
     () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
   );
 
+  // Apply theme immediately when it changes
   useEffect(() => {
     const root = window.document.documentElement;
     root.classList.remove("light", "dark");
@@ -46,7 +47,10 @@ export function ThemeProvider({
     }
 
     root.classList.add(theme);
-  }, [theme]);
+    
+    // Save theme to localStorage for persistence
+    localStorage.setItem(storageKey, theme);
+  }, [theme, storageKey]);
 
   // Listen for changes to the prefers-color-scheme media query
   useEffect(() => {
@@ -68,9 +72,9 @@ export function ThemeProvider({
 
   const value = {
     theme,
-    setTheme: (theme: Theme) => {
-      localStorage.setItem(storageKey, theme);
-      setTheme(theme);
+    setTheme: (newTheme: Theme) => {
+      localStorage.setItem(storageKey, newTheme);
+      setTheme(newTheme);
     },
   };
 

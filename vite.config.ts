@@ -4,6 +4,9 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 
+// Generate a unique build ID for this build
+const buildId = new Date().getTime().toString();
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
@@ -22,13 +25,13 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     // Add timestamp to assets for cache busting
-    assetsDir: `assets_${new Date().getTime()}`,
+    assetsDir: `assets_${buildId}`,
     rollupOptions: {
       output: {
         // Add content hash to file names for cache invalidation
-        entryFileNames: 'assets/[name]-[hash].js',
-        chunkFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash].[ext]',
+        entryFileNames: `assets/[name]-${buildId}-[hash].js`,
+        chunkFileNames: `assets/[name]-${buildId}-[hash].js`,
+        assetFileNames: `assets/[name]-${buildId}-[hash].[ext]`,
         manualChunks: {
           vendor: [
             'react', 
@@ -38,6 +41,12 @@ export default defineConfig(({ mode }) => ({
           ],
         },
       },
+    },
+  },
+  // Add unique query parameter to the index.html file
+  experimental: {
+    renderBuiltUrl(filename) {
+      return filename + `?v=${buildId}`;
     },
   },
   // Add base URL to make sure assets are loaded correctly
