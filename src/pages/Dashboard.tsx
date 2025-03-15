@@ -1,6 +1,7 @@
+
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Activity, Heart, BarChart3, LineChart as LucideLineChart, TrendingUp, MoreHorizontal, Filter, Info, Droplet, Moon, Clock, AlertCircle, Star, Thermometer, MessageSquareIcon } from 'lucide-react';
+import { Calendar, Activity, Heart, BarChart3, LineChart as LucideLineChart, TrendingUp, MoreHorizontal, Filter, Info, Droplet, Moon, Clock, AlertCircle, Star, Thermometer, MessageSquare } from 'lucide-react';
 import Navigation from '@/components/Navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -668,5 +669,23 @@ const Dashboard = () => {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-xl flex items-center">
-               
+                <MessageSquare className="h-5 w-5 mr-2 text-lavender-500" />
+                Chat with Luna AI
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground mb-4">
+                Get personalized health insights, track patterns, and receive guidance based on your cycle data.
+              </p>
+              <Button className="bg-lavender-500 hover:bg-lavender-600" onClick={() => window.location.href = '/chat'}>
+                Start a conversation
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+};
 
+export default Dashboard;
