@@ -14,7 +14,6 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { addDays, format, isPast, parseISO } from 'date-fns';
-import { useToast } from "@/hooks/use-toast";
 
 type Notification = {
   id: string;
@@ -29,7 +28,6 @@ const Notifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
-  const { toast } = useToast();
 
   useEffect(() => {
     if (!user) return;
@@ -52,10 +50,6 @@ const Notifications = () => {
         const readNotificationsString = localStorage.getItem(`${user.id}_read_notifications`);
         const readNotifications = readNotificationsString ? JSON.parse(readNotificationsString) : [];
         
-        // Check local storage for dismissed notifications
-        const dismissedNotificationsString = localStorage.getItem(`${user.id}_dismissed_notifications`);
-        const dismissedNotifications = dismissedNotificationsString ? JSON.parse(dismissedNotificationsString) : [];
-        
         let tempNotifications: Notification[] = [];
         
         // Add period prediction notification if available
@@ -63,61 +57,51 @@ const Notifications = () => {
           const predictionDate = parseISO(statsData.next_predicted_date);
           const daysUntil = Math.ceil((predictionDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
           
-          const periodPredictionId = 'period-prediction';
-          if (daysUntil <= 5 && daysUntil >= 0 && !dismissedNotifications.includes(periodPredictionId)) {
+          if (daysUntil <= 5 && daysUntil >= 0) {
             tempNotifications.push({
-              id: periodPredictionId,
+              id: 'period-prediction',
               title: 'Period Coming Soon',
               message: `Your period is predicted to start in ${daysUntil === 0 ? 'today' : daysUntil === 1 ? 'tomorrow' : `${daysUntil} days`}. Consider stocking up on supplies.`,
               date: new Date().toISOString(),
-              read: readNotifications.includes(periodPredictionId)
+              read: readNotifications.includes('period-prediction')
             });
-          }
-          
-          const periodStartedId = 'period-started';
-          if (daysUntil === -1 && !dismissedNotifications.includes(periodStartedId)) {
+          } else if (daysUntil === -1) {
             tempNotifications.push({
-              id: periodStartedId,
+              id: 'period-started',
               title: 'Period Predicted Today',
               message: 'Your period is predicted to have started today. Track your flow to improve future predictions.',
               date: new Date().toISOString(),
-              read: readNotifications.includes(periodStartedId)
+              read: readNotifications.includes('period-started')
             });
           }
         }
         
         // Add welcome notification for new users
-        const welcomeId = 'welcome';
-        if (!dismissedNotifications.includes(welcomeId)) {
-          const { data: cycleData, error: cycleError } = await supabase
-            .from('cycle_entries')
-            .select('count')
-            .eq('user_id', user.id);
-            
-          if (cycleError) {
-            console.error('Error checking user data:', cycleError);
-          } else if (!cycleData || cycleData.length === 0) {
-            tempNotifications.push({
-              id: welcomeId,
-              title: 'Welcome to Femmelytics',
-              message: 'Track your first cycle to get personalized insights.',
-              date: new Date().toISOString(),
-              read: readNotifications.includes(welcomeId)
-            });
-          }
-        }
-        
-        // Add chat suggestion if not dismissed
-        const chatSuggestionId = 'luna-chat';
-        if (!dismissedNotifications.includes(chatSuggestionId)) {
+        const { data: cycleData, error: cycleError } = await supabase
+          .from('cycle_entries')
+          .select('count')
+          .eq('user_id', user.id);
+          
+        if (cycleError) {
+          console.error('Error checking user data:', cycleError);
+        } else if (!cycleData || cycleData.length === 0) {
           tempNotifications.push({
-            id: chatSuggestionId,
-            title: 'Chat with Luna',
-            message: 'Need advice or information? Chat with Luna, your AI health assistant.',
+            id: 'welcome',
+            title: 'Welcome to Femmelytics',
+            message: 'Track your first cycle to get personalized insights.',
             date: new Date().toISOString(),
-            read: readNotifications.includes(chatSuggestionId)
+            read: readNotifications.includes('welcome')
           });
         }
+        
+        // Add chat suggestion
+        tempNotifications.push({
+          id: 'luna-chat',
+          title: 'Chat with Luna',
+          message: 'Need advice or information? Chat with Luna, your AI health assistant.',
+          date: new Date().toISOString(),
+          read: readNotifications.includes('luna-chat')
+        });
         
         setNotifications(tempNotifications);
         setUnreadCount(tempNotifications.filter(n => !n.read).length);
@@ -150,54 +134,42 @@ const Notifications = () => {
     }
   }, [isOpen, unreadCount, notifications, user]);
 
-  const dismissNotification = (id: string) => {
+  const markAsRead = (id: string) => {
     if (!user) return;
     
-    // Get current dismissed notifications from localStorage
-    const dismissedNotificationsString = localStorage.getItem(`${user.id}_dismissed_notifications`);
-    const dismissedNotifications = dismissedNotificationsString ? JSON.parse(dismissedNotificationsString) : [];
+    // Get current read notifications from localStorage
+    const readNotificationsString = localStorage.getItem(`${user.id}_read_notifications`);
+    const readNotifications = readNotificationsString ? JSON.parse(readNotificationsString) : [];
     
     // Add this ID if not already present
-    if (!dismissedNotifications.includes(id)) {
-      dismissedNotifications.push(id);
-      localStorage.setItem(`${user.id}_dismissed_notifications`, JSON.stringify(dismissedNotifications));
+    if (!readNotifications.includes(id)) {
+      readNotifications.push(id);
+      localStorage.setItem(`${user.id}_read_notifications`, JSON.stringify(readNotifications));
     }
     
-    // Remove from current notifications
-    setNotifications(prev => prev.filter(notification => notification.id !== id));
-    setUnreadCount(prev => Math.max(0, prev - (notifications.find(n => n.id === id && !n.read) ? 1 : 0)));
-    
-    toast({
-      title: "Notification dismissed",
-      description: "You won't see this notification again.",
-      duration: 3000,
-    });
+    setNotifications(prev => 
+      prev.map(notification => 
+        notification.id === id 
+          ? { ...notification, read: true } 
+          : notification
+      )
+    );
+    setUnreadCount(prev => Math.max(0, prev - 1));
   };
 
-  const dismissAllNotifications = () => {
-    if (!user || notifications.length === 0) return;
+  const markAllAsRead = () => {
+    if (!user) return;
     
     // Get all notification IDs
     const allIds = notifications.map(n => n.id);
     
-    // Get current dismissed notifications from localStorage
-    const dismissedNotificationsString = localStorage.getItem(`${user.id}_dismissed_notifications`);
-    const dismissedNotifications = dismissedNotificationsString ? JSON.parse(dismissedNotificationsString) : [];
+    // Save to localStorage
+    localStorage.setItem(`${user.id}_read_notifications`, JSON.stringify(allIds));
     
-    // Add all current notification IDs
-    const updatedDismissedNotifications = [...new Set([...dismissedNotifications, ...allIds])];
-    localStorage.setItem(`${user.id}_dismissed_notifications`, JSON.stringify(updatedDismissedNotifications));
-    
-    // Clear current notifications
-    setNotifications([]);
+    setNotifications(prev => 
+      prev.map(notification => ({ ...notification, read: true }))
+    );
     setUnreadCount(0);
-    setIsOpen(false);
-    
-    toast({
-      title: "All notifications dismissed",
-      description: "Your notification list has been cleared.",
-      duration: 3000,
-    });
   };
 
   return (
@@ -215,14 +187,14 @@ const Notifications = () => {
       <DropdownMenuContent align="end" className="w-80">
         <DropdownMenuLabel className="flex justify-between items-center">
           <span>Notifications</span>
-          {notifications.length > 0 && (
+          {unreadCount > 0 && (
             <Button 
               variant="ghost" 
               size="sm" 
               className="text-xs h-7 px-2"
-              onClick={dismissAllNotifications}
+              onClick={markAllAsRead}
             >
-              Dismiss all
+              Mark all as read
             </Button>
           )}
         </DropdownMenuLabel>
@@ -233,8 +205,9 @@ const Notifications = () => {
               <DropdownMenuItem 
                 key={notification.id}
                 className={`cursor-pointer p-3 ${!notification.read ? 'bg-lavender-50 dark:bg-lavender-900/30' : ''}`}
+                onClick={() => markAsRead(notification.id)}
               >
-                <div className="flex flex-col gap-1 w-full">
+                <div className="flex flex-col gap-1">
                   <div className="flex justify-between items-center">
                     <span className="font-medium">{notification.title}</span>
                     <span className="text-xs text-muted-foreground">
@@ -242,19 +215,6 @@ const Notifications = () => {
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground">{notification.message}</p>
-                  <div className="flex justify-end mt-1">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="text-xs h-6 px-2 text-primary hover:text-primary-foreground"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        dismissNotification(notification.id);
-                      }}
-                    >
-                      Dismiss
-                    </Button>
-                  </div>
                 </div>
               </DropdownMenuItem>
             ))
