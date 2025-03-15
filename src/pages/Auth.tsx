@@ -17,7 +17,7 @@ import { InfoIcon } from 'lucide-react';
 
 const Auth = () => {
   const navigate = useNavigate();
-  const { signIn, signUp, user, loading: authLoading } = useAuth();
+  const { signIn, signUp, user } = useAuth();
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
@@ -55,9 +55,7 @@ const Auth = () => {
     setIsLoading(true);
     try {
       await signIn(email, password);
-      // Note: Navigation is now handled in the signIn function
-    } catch (error) {
-      console.error("Sign in error:", error);
+    } finally {
       setIsLoading(false);
     }
   };
@@ -94,15 +92,10 @@ const Auth = () => {
           description: "Please check your email to confirm your account.",
         });
       }
-      setIsLoading(false);
-    } catch (error) {
-      console.error("Sign up error:", error);
+    } finally {
       setIsLoading(false);
     }
   };
-
-  // Don't show loading spinner in both places
-  const showLoadingSpinner = isLoading || authLoading;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-lavender-50 flex flex-col">
@@ -189,7 +182,7 @@ const Auth = () => {
                           className="pl-10"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
-                          disabled={showLoadingSpinner}
+                          disabled={isLoading}
                         />
                       </div>
                     </div>
@@ -204,7 +197,7 @@ const Auth = () => {
                           className="pl-10"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
-                          disabled={showLoadingSpinner}
+                          disabled={isLoading}
                         />
                       </div>
                     </div>
@@ -214,9 +207,9 @@ const Auth = () => {
                     <Button
                       type="submit"
                       className="w-full bg-lavender-500 hover:bg-lavender-600"
-                      disabled={showLoadingSpinner}
+                      disabled={isLoading}
                     >
-                      {showLoadingSpinner ? (
+                      {isLoading ? (
                         <div className="flex items-center">
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                           <span>Signing in...</span>

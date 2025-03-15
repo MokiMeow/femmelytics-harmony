@@ -17,7 +17,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
       // Set a brief timeout to ensure auth state is fully updated
       const timer = setTimeout(() => {
         setIsChecking(false);
-      }, 300); // Increased timeout for more reliability
+      }, 100);
       
       return () => clearTimeout(timer);
     }
