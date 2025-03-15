@@ -18,50 +18,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Helper: fetch current session and update user state
-  const updateUserFromSession = async () => {
+  // Helper to fetch the latest session
+  const fetchSession = async () => {
     const { data, error } = await supabase.auth.getSession();
     if (error) {
       console.error('Error fetching session:', error);
       return;
     }
-    setUser(data?.session?.user || null);
+    const sessionUser = data?.session?.user || null;
+    setUser(sessionUser);
   };
 
-  // Listen for auth state changes
   useEffect(() => {
-    const initialize = async () => {
+    // Initial session fetch
+    (async () => {
       setLoading(true);
-      await updateUserFromSession();
+      await fetchSession();
       setLoading(false);
-    };
+    })();
 
-    initialize();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // Immediately clear the user state so that old data is removed.
-      setUser(null);
-      setLoading(true);
-
-      // Wait a short time then update user state.
-      setTimeout(async () => {
-        await updateUserFromSession();
-        setLoading(false);
-      }, 100);
-
-      if (event === 'SIGNED_IN' && session?.user) {
-        // Only show welcome toast once per account (using user id)
-        const welcomeKey = `welcomeToastShown-${session.user.id}`;
-        if (!localStorage.getItem(welcomeKey)) {
-          toast({
-            title: 'Welcome back!',
-            description: 'You have successfully signed in.',
-          });
-          localStorage.setItem(welcomeKey, 'true');
+    // Listen for auth state changes
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN') {
+        // Update user state immediately from listener
+        const sessionUser = session?.user || null;
+        setUser(sessionUser);
+        if (sessionUser) {
+          const welcomeKey = `welcomeToastShown-${sessionUser.id}`;
+          if (!localStorage.getItem(welcomeKey)) {
+            toast({
+              title: "Welcome back!",
+              description: "You have successfully signed in.",
+            });
+            localStorage.setItem(welcomeKey, 'true');
+          }
         }
-      }
-
-      if (event === 'SIGNED_OUT') {
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
         toast({
           title: 'Signed out successfully',
           description: 'You have been signed out of your account.',
@@ -76,70 +69,67 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [navigate]);
 
   const signUp = async (email: string, password: string) => {
-    try {
-      const { data, error } = await supabase.auth.signUp({ email, password });
-      if (error) {
-        toast({
-          title: 'Sign up failed',
-          description: error.message,
-          variant: 'destructive',
-        });
-        throw error;
-      }
-      // The auth listener will update the state on session change.
-      return data;
-    } catch (error: any) {
-      console.error('Error signing up:', error.message);
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) {
+      toast({
+        title: "Sign up failed",
+        description: error.message,
+        variant: "destructive",
+      });
       throw error;
     }
+    // Note: If your sign up flow requires email confirmation, the session might not be active immediately.
+    return data;
   };
 
   const signIn = async (email: string, password: string) => {
-    try {
-      // If there is already a signed-in user with a different email, sign them out first.
-      if (user && user.email !== email) {
-        await supabase.auth.signOut();
-        // Wait briefly to let the sign-out process complete.
-        await new Promise((resolve) => setTimeout(resolve, 100));
-      }
+    // If a different user is already signed in, sign them out first.
+    if (user && user.email !== email) {
+      await supabase.auth.signOut();
+      // Optionally, wait a short moment before proceeding
+    }
 
-      // For development purposes, override credentials if needed.
-      const actualEmail = email === 'mack@gmail.com' ? 'mack@gmail.com' : email;
-      const actualPassword = email === 'mack@gmail.com' ? 'mohithtony' : password;
-      
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: actualEmail,
-        password: actualPassword,
+    // For development purposes, override credentials if needed:
+    const actualEmail = email === 'mack@gmail.com' ? 'mack@gmail.com' : email;
+    const actualPassword = email === 'mack@gmail.com' ? 'mohithtony' : password;
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: actualEmail,
+      password: actualPassword,
+    });
+    if (error) {
+      toast({
+        title: "Sign in failed",
+        description: error.message,
+        variant: "destructive",
       });
-      if (error) {
-        toast({
-          title: 'Sign in failed',
-          description: error.message,
-          variant: 'destructive',
-        });
-        throw error;
-      }
-      // The auth listener will update the user state.
-      return data;
-    } catch (error: any) {
-      console.error('Error signing in:', error.message);
       throw error;
     }
+
+    // Manually update user state from the response
+    if (data.user) {
+      setUser(data.user);
+    } else if (data.session && data.session.user) {
+      setUser(data.session.user);
+    } else {
+      // If for some reason the response doesn't include user data, re-fetch the session
+      await fetchSession();
+    }
+    return data;
   };
 
   const signOut = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      // Auth listener will handle clearing state and navigation.
-    } catch (error: any) {
-      console.error('Error signing out:', error.message);
+    const { error } = await supabase.auth.signOut();
+    if (error) {
       toast({
         title: 'Error signing out',
         description: error.message,
         variant: 'destructive',
       });
+      throw error;
     }
+    // Directly clear the user state.
+    setUser(null);
   };
 
   return (
