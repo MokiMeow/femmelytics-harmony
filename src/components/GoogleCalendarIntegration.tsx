@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { AlertCircle, Calendar, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { syncWithGoogleCalendar } from '@/services/reportService';
+import { syncWithGoogleCalendar } from '@/services/calendarService';
 import { cn } from '@/lib/utils';
 
 interface GoogleCalendarIntegrationProps {
@@ -65,7 +65,7 @@ const GoogleCalendarIntegration = ({ isConnected, onStatusChange }: GoogleCalend
           }
           
           // Sync cycle data with the primary calendar
-          const success = await syncWithGoogleCalendar(primaryCalendar.id, accessToken);
+          const success = await syncWithGoogleCalendar(accessToken);
           
           if (success) {
             toast({
