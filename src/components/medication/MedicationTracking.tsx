@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -38,7 +37,7 @@ interface MedicationHistory {
   medication_id: string;
   taken_at: string;
   taken: boolean;
-  notes: string | null;
+  notes?: string | null;
   created_at: string;
 }
 
@@ -97,11 +96,17 @@ const MedicationTracking = () => {
         .from('medications')
         .select('*')
         .eq('user_id', user.id)
-        .order('active', { ascending: false })
         .order('name');
 
       if (error) throw error;
-      setMedications(data || []);
+      
+      const transformedData = data.map(med => ({
+        ...med,
+        time_of_day: typeof med.time_of_day === 'string' ? JSON.parse(med.time_of_day) : med.time_of_day,
+        active: med.active !== undefined ? med.active : true
+      }));
+      
+      setMedications(transformedData);
     } catch (error) {
       console.error('Error fetching medications:', error);
       toast({
@@ -130,13 +135,19 @@ const MedicationTracking = () => {
 
       if (error) throw error;
 
-      // Organize history by medication_id
       const historyByMedication: Record<string, MedicationHistory[]> = {};
       data.forEach(entry => {
         if (!historyByMedication[entry.medication_id]) {
           historyByMedication[entry.medication_id] = [];
         }
-        historyByMedication[entry.medication_id].push(entry);
+        historyByMedication[entry.medication_id].push({
+          id: entry.id,
+          medication_id: entry.medication_id,
+          taken_at: entry.taken_at,
+          taken: entry.taken,
+          notes: entry.notes || null,
+          created_at: entry.created_at
+        });
       });
 
       setHistory(historyByMedication);
@@ -158,8 +169,9 @@ const MedicationTracking = () => {
 
     setIsLoading(true);
     try {
+      const timeOfDayForDb = JSON.stringify(newMedication.time_of_day);
+      
       if (isEditing && newMedication.id) {
-        // Update existing medication
         const { error } = await supabase
           .from('medications')
           .update({
@@ -168,7 +180,7 @@ const MedicationTracking = () => {
             frequency: newMedication.frequency,
             start_date: newMedication.start_date,
             end_date: newMedication.end_date,
-            time_of_day: newMedication.time_of_day,
+            time_of_day: timeOfDayForDb,
             notes: newMedication.notes,
             active: newMedication.active,
           })
@@ -182,7 +194,6 @@ const MedicationTracking = () => {
           description: "Your medication has been updated successfully.",
         });
       } else {
-        // Create new medication
         const { error } = await supabase
           .from('medications')
           .insert({
@@ -192,7 +203,7 @@ const MedicationTracking = () => {
             frequency: newMedication.frequency,
             start_date: newMedication.start_date,
             end_date: newMedication.end_date || null,
-            time_of_day: newMedication.time_of_day,
+            time_of_day: timeOfDayForDb,
             notes: newMedication.notes || null,
             active: true,
           });
@@ -205,7 +216,6 @@ const MedicationTracking = () => {
         });
       }
 
-      // Reset form and refresh medications
       resetForm();
       fetchMedications();
       setIsDialogOpen(false);
