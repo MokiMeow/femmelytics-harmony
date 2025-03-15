@@ -43,10 +43,24 @@ export function ThemeProvider({
         : "light";
 
       root.classList.add(systemTheme);
+      
+      // Apply a specific attribute for deeper dark mode customization
+      if (systemTheme === "dark") {
+        root.setAttribute("data-enhanced-dark", "true");
+      } else {
+        root.removeAttribute("data-enhanced-dark");
+      }
       return;
     }
 
     root.classList.add(theme);
+    
+    // Apply a specific attribute for deeper dark mode customization
+    if (theme === "dark") {
+      root.setAttribute("data-enhanced-dark", "true");
+    } else {
+      root.removeAttribute("data-enhanced-dark");
+    }
     
     // Save theme to localStorage for persistence
     localStorage.setItem(storageKey, theme);
@@ -60,9 +74,15 @@ export function ThemeProvider({
       if (theme === "system") {
         const root = window.document.documentElement;
         root.classList.remove("light", "dark");
-        root.classList.add(
-          mediaQuery.matches ? "dark" : "light"
-        );
+        const systemTheme = mediaQuery.matches ? "dark" : "light";
+        root.classList.add(systemTheme);
+        
+        // Apply a specific attribute for deeper dark mode customization
+        if (systemTheme === "dark") {
+          root.setAttribute("data-enhanced-dark", "true");
+        } else {
+          root.removeAttribute("data-enhanced-dark");
+        }
       }
     };
 

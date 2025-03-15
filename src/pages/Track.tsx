@@ -1,14 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, Activity, Moon, Droplet, Thermometer, Heart, Plus, Save, ArrowLeft, X } from 'lucide-react';
+import { Calendar, Activity, Moon, Droplet, Thermometer, Heart, Plus, Save, ArrowLeft, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import Navigation from '@/components/Navigation';
 import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { EmojiSelector } from '@/components/ui/emoji-selector';
 import {
   Popover,
   PopoverContent,
@@ -29,6 +29,33 @@ import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchDayEntry, saveTrackingData } from '@/services/trackerService';
 
+// Define the mood options with emojis
+const moodOptions = [
+  { emoji: "😞", label: "Very Low", value: 0 },
+  { emoji: "😔", label: "Low", value: 1 },
+  { emoji: "😐", label: "Neutral", value: 2 },
+  { emoji: "🙂", label: "Good", value: 3 },
+  { emoji: "😄", label: "Excellent", value: 4 },
+];
+
+// Define the energy options with emojis
+const energyOptions = [
+  { emoji: "😴", label: "Exhausted", value: 0 },
+  { emoji: "🥱", label: "Tired", value: 1 },
+  { emoji: "😌", label: "Normal", value: 2 },
+  { emoji: "⚡", label: "Energetic", value: 3 },
+  { emoji: "🔋", label: "Very Energetic", value: 4 },
+];
+
+// Define the flow options with emojis
+const flowOptions = [
+  { emoji: "❌", label: "None", value: 0 },
+  { emoji: "💧", label: "Light", value: 1 },
+  { emoji: "💦", label: "Medium", value: 2 },
+  { emoji: "🌊", label: "Heavy", value: 3 },
+  { emoji: "🌧️", label: "Very Heavy", value: 4 },
+];
+
 const Track = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -44,21 +71,6 @@ const Track = () => {
   const [customSymptomDialogOpen, setCustomSymptomDialogOpen] = useState(false);
   const [newCustomSymptom, setNewCustomSymptom] = useState('');
   const [customSymptoms, setCustomSymptoms] = useState<{id: string, label: string}[]>([]);
-
-  const moodLabels = ['Very Low', 'Low', 'Neutral', 'Good', 'Excellent'];
-  const energyLabels = ['Exhausted', 'Tired', 'Normal', 'Energetic', 'Very Energetic'];
-  const flowLabels = ['None', 'Light', 'Medium', 'Heavy', 'Very Heavy'];
-
-  const commonSymptoms = [
-    { id: 'headache', label: 'Headache', icon: <Thermometer className="h-4 w-4" /> },
-    { id: 'cramps', label: 'Cramps', icon: <Activity className="h-4 w-4" /> },
-    { id: 'bloating', label: 'Bloating', icon: <Droplet className="h-4 w-4" /> },
-    { id: 'fatigue', label: 'Fatigue', icon: <Moon className="h-4 w-4" /> },
-    { id: 'nausea', label: 'Nausea', icon: <Droplet className="h-4 w-4" /> },
-    { id: 'backPain', label: 'Back Pain', icon: <Activity className="h-4 w-4" /> },
-    { id: 'cravings', label: 'Cravings', icon: <Heart className="h-4 w-4" /> },
-    { id: 'insomnia', label: 'Insomnia', icon: <Moon className="h-4 w-4" /> },
-  ];
 
   // Load custom symptoms from localStorage on mount
   useEffect(() => {
@@ -219,6 +231,17 @@ const Track = () => {
     );
   }
 
+  const commonSymptoms = [
+    { id: 'headache', label: 'Headache', icon: <Thermometer className="h-4 w-4" /> },
+    { id: 'cramps', label: 'Cramps', icon: <Activity className="h-4 w-4" /> },
+    { id: 'bloating', label: 'Bloating', icon: <Droplet className="h-4 w-4" /> },
+    { id: 'fatigue', label: 'Fatigue', icon: <Moon className="h-4 w-4" /> },
+    { id: 'nausea', label: 'Nausea', icon: <Droplet className="h-4 w-4" /> },
+    { id: 'backPain', label: 'Back Pain', icon: <Activity className="h-4 w-4" /> },
+    { id: 'cravings', label: 'Cravings', icon: <Heart className="h-4 w-4" /> },
+    { id: 'insomnia', label: 'Insomnia', icon: <Moon className="h-4 w-4" /> },
+  ];
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -250,7 +273,7 @@ const Track = () => {
           
           <div className="space-y-8">
             {/* Date Selector */}
-            <Card>
+            <Card className="dark:border-slate-700 dark:bg-slate-800/60">
               <CardContent className="p-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div>
@@ -265,7 +288,7 @@ const Track = () => {
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
-                        className="w-full sm:w-auto justify-start text-left font-normal"
+                        className="w-full sm:w-auto justify-start text-left font-normal dark:border-slate-600 dark:bg-slate-700/50"
                       >
                         <Calendar className="mr-2 h-4 w-4" />
                         {format(date, 'PPP')}
@@ -286,110 +309,56 @@ const Track = () => {
             </Card>
             
             <TabsContent value="cycle" className="mt-0 space-y-6">
-              <Card>
+              <Card className="dark:border-slate-700 dark:bg-slate-800/60">
                 <CardContent className="p-6">
-                  <h2 className="text-lg font-medium mb-4 flex items-center">
+                  <h2 className="text-lg font-medium mb-6 flex items-center">
                     <Droplet className="h-5 w-5 mr-2 text-coral-500" />
                     Flow Intensity
                   </h2>
                   
-                  <div className="space-y-6">
-                    <Slider
-                      value={[flow]}
-                      max={4}
-                      step={1}
-                      onValueChange={(value) => setFlow(value[0])}
-                      className="py-4"
-                    />
-                    
-                    <div className="grid grid-cols-5 gap-2 text-center text-sm text-muted-foreground">
-                      {flowLabels.map((label, index) => (
-                        <div 
-                          key={index} 
-                          className={cn(
-                            "py-1 rounded transition-colors",
-                            flow === index ? "bg-lavender-100 text-lavender-700 font-medium dark:bg-lavender-900 dark:text-lavender-200" : ""
-                          )}
-                        >
-                          {label}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <EmojiSelector 
+                    value={flow}
+                    onChange={setFlow}
+                    options={flowOptions}
+                  />
                 </CardContent>
               </Card>
             </TabsContent>
             
             <TabsContent value="mood" className="mt-0 space-y-6">
-              <Card>
+              <Card className="dark:border-slate-700 dark:bg-slate-800/60">
                 <CardContent className="p-6">
-                  <h2 className="text-lg font-medium mb-4 flex items-center">
+                  <h2 className="text-lg font-medium mb-6 flex items-center">
                     <Heart className="h-5 w-5 mr-2 text-coral-500" />
                     Mood
                   </h2>
                   
-                  <div className="space-y-6">
-                    <Slider
-                      value={[mood]}
-                      max={4}
-                      step={1}
-                      onValueChange={(value) => setMood(value[0])}
-                      className="py-4"
-                    />
-                    
-                    <div className="grid grid-cols-5 gap-2 text-center text-sm text-muted-foreground">
-                      {moodLabels.map((label, index) => (
-                        <div 
-                          key={index} 
-                          className={cn(
-                            "py-1 rounded transition-colors",
-                            mood === index ? "bg-lavender-100 text-lavender-700 font-medium dark:bg-lavender-900 dark:text-lavender-200" : ""
-                          )}
-                        >
-                          {label}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <EmojiSelector 
+                    value={mood}
+                    onChange={setMood}
+                    options={moodOptions}
+                  />
                 </CardContent>
               </Card>
               
-              <Card>
+              <Card className="dark:border-slate-700 dark:bg-slate-800/60">
                 <CardContent className="p-6">
-                  <h2 className="text-lg font-medium mb-4 flex items-center">
+                  <h2 className="text-lg font-medium mb-6 flex items-center">
                     <Activity className="h-5 w-5 mr-2 text-teal-500" />
                     Energy Level
                   </h2>
                   
-                  <div className="space-y-6">
-                    <Slider
-                      value={[energy]}
-                      max={4}
-                      step={1}
-                      onValueChange={(value) => setEnergy(value[0])}
-                      className="py-4"
-                    />
-                    
-                    <div className="grid grid-cols-5 gap-2 text-center text-sm text-muted-foreground">
-                      {energyLabels.map((label, index) => (
-                        <div 
-                          key={index} 
-                          className={cn(
-                            "py-1 rounded transition-colors",
-                            energy === index ? "bg-lavender-100 text-lavender-700 font-medium dark:bg-lavender-900 dark:text-lavender-200" : ""
-                          )}
-                        >
-                          {label}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <EmojiSelector 
+                    value={energy}
+                    onChange={setEnergy}
+                    options={energyOptions}
+                  />
                 </CardContent>
               </Card>
             </TabsContent>
             
             <TabsContent value="symptoms" className="mt-0 space-y-6">
-              <Card>
+              <Card className="dark:border-slate-700 dark:bg-slate-800/60">
                 <CardContent className="p-6">
                   <h2 className="text-lg font-medium mb-4">Symptoms</h2>
                   
@@ -402,15 +371,15 @@ const Track = () => {
                         className={cn(
                           "border rounded-xl p-3 text-sm flex flex-col items-center justify-center gap-2 transition-all",
                           symptoms.includes(symptom.id)
-                            ? "bg-lavender-100 border-lavender-300 text-lavender-700 dark:bg-lavender-900 dark:border-lavender-700 dark:text-lavender-200"
-                            : "border-border hover:border-lavender-200 hover:bg-lavender-50 dark:hover:bg-lavender-950 dark:hover:border-lavender-800"
+                            ? "bg-lavender-100 border-lavender-300 text-lavender-700 dark:bg-lavender-900/50 dark:border-lavender-700 dark:text-lavender-300"
+                            : "border-border hover:border-lavender-200 hover:bg-lavender-50 dark:border-slate-600 dark:hover:bg-slate-700 dark:hover:border-lavender-800"
                         )}
                       >
                         <div className={cn(
                           "w-8 h-8 rounded-full flex items-center justify-center",
                           symptoms.includes(symptom.id)
                             ? "bg-lavender-200 dark:bg-lavender-800"
-                            : "bg-muted"
+                            : "bg-muted dark:bg-slate-700"
                         )}>
                           {symptom.icon}
                         </div>
@@ -426,15 +395,15 @@ const Track = () => {
                         className={cn(
                           "border rounded-xl p-3 text-sm flex flex-col items-center justify-center gap-2 transition-all relative",
                           symptoms.includes(symptom.id)
-                            ? "bg-lavender-100 border-lavender-300 text-lavender-700 dark:bg-lavender-900 dark:border-lavender-700 dark:text-lavender-200"
-                            : "border-border hover:border-lavender-200 hover:bg-lavender-50 dark:hover:bg-lavender-950 dark:hover:border-lavender-800"
+                            ? "bg-lavender-100 border-lavender-300 text-lavender-700 dark:bg-lavender-900/50 dark:border-lavender-700 dark:text-lavender-300"
+                            : "border-border hover:border-lavender-200 hover:bg-lavender-50 dark:border-slate-600 dark:hover:bg-slate-700 dark:hover:border-lavender-800"
                         )}
                       >
                         <div className={cn(
                           "w-8 h-8 rounded-full flex items-center justify-center",
                           symptoms.includes(symptom.id)
                             ? "bg-lavender-200 dark:bg-lavender-800"
-                            : "bg-muted"
+                            : "bg-muted dark:bg-slate-700"
                         )}>
                           <Heart className="h-4 w-4" />
                         </div>
@@ -456,9 +425,9 @@ const Track = () => {
                     <button
                       type="button"
                       onClick={() => setCustomSymptomDialogOpen(true)}
-                      className="border border-dashed border-border rounded-xl p-3 text-sm flex flex-col items-center justify-center gap-2 hover:border-lavender-200 hover:bg-lavender-50 dark:hover:bg-lavender-950 dark:hover:border-lavender-800 transition-all"
+                      className="border border-dashed border-border rounded-xl p-3 text-sm flex flex-col items-center justify-center gap-2 hover:border-lavender-200 hover:bg-lavender-50 dark:border-slate-600 dark:hover:bg-slate-700 dark:hover:border-lavender-800 transition-all"
                     >
-                      <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-full bg-muted dark:bg-slate-700 flex items-center justify-center">
                         <Plus className="h-4 w-4" />
                       </div>
                       <span>Add Custom</span>
@@ -467,11 +436,11 @@ const Track = () => {
                 </CardContent>
               </Card>
               
-              <Card>
+              <Card className="dark:border-slate-700 dark:bg-slate-800/60">
                 <CardContent className="p-6">
                   <h2 className="text-lg font-medium mb-4">Notes</h2>
                   <textarea
-                    className="w-full p-3 rounded-xl border border-border bg-muted/50 min-h-32 focus:outline-none focus:ring-2 focus:ring-lavender-200 transition-all dark:focus:ring-lavender-800"
+                    className="w-full p-3 rounded-xl border border-border bg-muted/50 min-h-32 focus:outline-none focus:ring-2 focus:ring-lavender-200 transition-all dark:border-slate-600 dark:bg-slate-700/50 dark:focus:ring-lavender-800"
                     placeholder="Add any additional notes about how you're feeling today..."
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
@@ -505,7 +474,7 @@ const Track = () => {
       
       {/* Custom Symptom Dialog */}
       <Dialog open={customSymptomDialogOpen} onOpenChange={setCustomSymptomDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md dark:border-slate-700 dark:bg-slate-800">
           <DialogHeader>
             <DialogTitle>Add Custom Symptom</DialogTitle>
           </DialogHeader>
@@ -514,7 +483,7 @@ const Track = () => {
               value={newCustomSymptom}
               onChange={(e) => setNewCustomSymptom(e.target.value)}
               placeholder="Enter symptom name..."
-              className="w-full"
+              className="w-full dark:border-slate-600 dark:bg-slate-700/50"
               autoFocus
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && newCustomSymptom.trim()) {
@@ -525,7 +494,7 @@ const Track = () => {
           </div>
           <DialogFooter>
             <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
+              <Button variant="outline" className="dark:border-slate-600 dark:bg-slate-700/50">Cancel</Button>
             </DialogClose>
             <Button 
               onClick={handleAddCustomSymptom}
