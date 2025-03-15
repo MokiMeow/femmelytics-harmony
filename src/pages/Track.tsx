@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, Activity, Moon, Droplet, Thermometer, Heart, Plus, Save, ArrowLeft } from 'lucide-react';
+import { Calendar, Clock, Activity, Moon, Droplet, Thermometer, Heart, Plus, Save, ArrowLeft, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import Navigation from '@/components/Navigation';
@@ -14,6 +14,15 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
@@ -32,6 +41,9 @@ const Track = () => {
   const [symptoms, setSymptoms] = useState<string[]>([]);
   const [notes, setNotes] = useState<string>('');
   const [isFetchingData, setIsFetchingData] = useState(false);
+  const [customSymptomDialogOpen, setCustomSymptomDialogOpen] = useState(false);
+  const [newCustomSymptom, setNewCustomSymptom] = useState('');
+  const [customSymptoms, setCustomSymptoms] = useState<{id: string, label: string}[]>([]);
 
   const moodLabels = ['Very Low', 'Low', 'Neutral', 'Good', 'Excellent'];
   const energyLabels = ['Exhausted', 'Tired', 'Normal', 'Energetic', 'Very Energetic'];
@@ -47,6 +59,21 @@ const Track = () => {
     { id: 'cravings', label: 'Cravings', icon: <Heart className="h-4 w-4" /> },
     { id: 'insomnia', label: 'Insomnia', icon: <Moon className="h-4 w-4" /> },
   ];
+
+  // Load custom symptoms from localStorage on mount
+  useEffect(() => {
+    const savedCustomSymptoms = localStorage.getItem('customSymptoms');
+    if (savedCustomSymptoms) {
+      setCustomSymptoms(JSON.parse(savedCustomSymptoms));
+    }
+  }, []);
+
+  // Save custom symptoms to localStorage when they change
+  useEffect(() => {
+    if (customSymptoms.length > 0) {
+      localStorage.setItem('customSymptoms', JSON.stringify(customSymptoms));
+    }
+  }, [customSymptoms]);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -113,6 +140,31 @@ const Track = () => {
     } else {
       setSymptoms([...symptoms, symptomId]);
     }
+  };
+
+  const handleAddCustomSymptom = () => {
+    if (newCustomSymptom.trim()) {
+      const newSymptomId = `custom-${Date.now()}`;
+      const newSymptom = {
+        id: newSymptomId,
+        label: newCustomSymptom.trim()
+      };
+      
+      setCustomSymptoms([...customSymptoms, newSymptom]);
+      setSymptoms([...symptoms, newSymptomId]);
+      setNewCustomSymptom('');
+      setCustomSymptomDialogOpen(false);
+      
+      toast({
+        title: "Symptom added",
+        description: `"${newCustomSymptom.trim()}" has been added to your symptoms.`,
+      });
+    }
+  };
+
+  const handleRemoveCustomSymptom = (id: string) => {
+    setCustomSymptoms(customSymptoms.filter(symptom => symptom.id !== id));
+    setSymptoms(symptoms.filter(symptomId => symptomId !== id));
   };
 
   const handleSave = async () => {
@@ -256,7 +308,7 @@ const Track = () => {
                           key={index} 
                           className={cn(
                             "py-1 rounded transition-colors",
-                            flow === index ? "bg-lavender-100 text-lavender-700 font-medium" : ""
+                            flow === index ? "bg-lavender-100 text-lavender-700 font-medium dark:bg-lavender-900 dark:text-lavender-200" : ""
                           )}
                         >
                           {label}
@@ -291,7 +343,7 @@ const Track = () => {
                           key={index} 
                           className={cn(
                             "py-1 rounded transition-colors",
-                            mood === index ? "bg-lavender-100 text-lavender-700 font-medium" : ""
+                            mood === index ? "bg-lavender-100 text-lavender-700 font-medium dark:bg-lavender-900 dark:text-lavender-200" : ""
                           )}
                         >
                           {label}
@@ -324,7 +376,7 @@ const Track = () => {
                           key={index} 
                           className={cn(
                             "py-1 rounded transition-colors",
-                            energy === index ? "bg-lavender-100 text-lavender-700 font-medium" : ""
+                            energy === index ? "bg-lavender-100 text-lavender-700 font-medium dark:bg-lavender-900 dark:text-lavender-200" : ""
                           )}
                         >
                           {label}
@@ -350,14 +402,14 @@ const Track = () => {
                         className={cn(
                           "border rounded-xl p-3 text-sm flex flex-col items-center justify-center gap-2 transition-all",
                           symptoms.includes(symptom.id)
-                            ? "bg-lavender-100 border-lavender-300 text-lavender-700"
-                            : "border-border hover:border-lavender-200 hover:bg-lavender-50"
+                            ? "bg-lavender-100 border-lavender-300 text-lavender-700 dark:bg-lavender-900 dark:border-lavender-700 dark:text-lavender-200"
+                            : "border-border hover:border-lavender-200 hover:bg-lavender-50 dark:hover:bg-lavender-950 dark:hover:border-lavender-800"
                         )}
                       >
                         <div className={cn(
                           "w-8 h-8 rounded-full flex items-center justify-center",
                           symptoms.includes(symptom.id)
-                            ? "bg-lavender-200"
+                            ? "bg-lavender-200 dark:bg-lavender-800"
                             : "bg-muted"
                         )}>
                           {symptom.icon}
@@ -366,9 +418,45 @@ const Track = () => {
                       </button>
                     ))}
                     
+                    {customSymptoms.map((symptom) => (
+                      <button
+                        key={symptom.id}
+                        type="button"
+                        onClick={() => toggleSymptom(symptom.id)}
+                        className={cn(
+                          "border rounded-xl p-3 text-sm flex flex-col items-center justify-center gap-2 transition-all relative",
+                          symptoms.includes(symptom.id)
+                            ? "bg-lavender-100 border-lavender-300 text-lavender-700 dark:bg-lavender-900 dark:border-lavender-700 dark:text-lavender-200"
+                            : "border-border hover:border-lavender-200 hover:bg-lavender-50 dark:hover:bg-lavender-950 dark:hover:border-lavender-800"
+                        )}
+                      >
+                        <div className={cn(
+                          "w-8 h-8 rounded-full flex items-center justify-center",
+                          symptoms.includes(symptom.id)
+                            ? "bg-lavender-200 dark:bg-lavender-800"
+                            : "bg-muted"
+                        )}>
+                          <Heart className="h-4 w-4" />
+                        </div>
+                        <span>{symptom.label}</span>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="absolute top-1 right-1 h-5 w-5 rounded-full bg-muted/50 hover:bg-red-100 dark:hover:bg-red-900"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveCustomSymptom(symptom.id);
+                          }}
+                        >
+                          <X className="h-3 w-3 text-muted-foreground" />
+                        </Button>
+                      </button>
+                    ))}
+                    
                     <button
                       type="button"
-                      className="border border-dashed border-border rounded-xl p-3 text-sm flex flex-col items-center justify-center gap-2 hover:border-lavender-200 hover:bg-lavender-50 transition-all"
+                      onClick={() => setCustomSymptomDialogOpen(true)}
+                      className="border border-dashed border-border rounded-xl p-3 text-sm flex flex-col items-center justify-center gap-2 hover:border-lavender-200 hover:bg-lavender-50 dark:hover:bg-lavender-950 dark:hover:border-lavender-800 transition-all"
                     >
                       <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
                         <Plus className="h-4 w-4" />
@@ -383,7 +471,7 @@ const Track = () => {
                 <CardContent className="p-6">
                   <h2 className="text-lg font-medium mb-4">Notes</h2>
                   <textarea
-                    className="w-full p-3 rounded-xl border border-border bg-muted/50 min-h-32 focus:outline-none focus:ring-2 focus:ring-lavender-200 transition-all"
+                    className="w-full p-3 rounded-xl border border-border bg-muted/50 min-h-32 focus:outline-none focus:ring-2 focus:ring-lavender-200 transition-all dark:focus:ring-lavender-800"
                     placeholder="Add any additional notes about how you're feeling today..."
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
@@ -414,6 +502,40 @@ const Track = () => {
           </div>
         </Tabs>
       </div>
+      
+      {/* Custom Symptom Dialog */}
+      <Dialog open={customSymptomDialogOpen} onOpenChange={setCustomSymptomDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Custom Symptom</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              value={newCustomSymptom}
+              onChange={(e) => setNewCustomSymptom(e.target.value)}
+              placeholder="Enter symptom name..."
+              className="w-full"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && newCustomSymptom.trim()) {
+                  handleAddCustomSymptom();
+                }
+              }}
+            />
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button 
+              onClick={handleAddCustomSymptom}
+              disabled={!newCustomSymptom.trim()}
+            >
+              Add Symptom
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
