@@ -37,6 +37,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       async (event, session) => {
         if (session?.user) {
           setUser(session.user);
+          // Only show welcome toast on explicit SIGNED_IN event, not on session recovery
           if (event === 'SIGNED_IN') {
             toast({
               title: "Welcome back!",

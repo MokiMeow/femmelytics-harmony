@@ -495,7 +495,8 @@ const Dashboard = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="h-64">
-                      {dashboardData?.cycleLengthData && dashboardData.cycleLengthData.length > 0 ? (
+                      {dashboardData?.cycleLengthData && dashboardData.cycleLengthData.length > 0 && 
+                       !dashboardData.cycleLengthData[0].isPlaceholder ? (
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart
                             data={dashboardData.cycleLengthData}
