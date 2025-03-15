@@ -14,7 +14,7 @@ export const generateChartAsBase64 = (canvasId: string, chartData: ChartData, ch
 
     if (!hasData) {
       // Create a canvas with a "No data" message instead of a chart
-      const canvas = createNoDataCanvas(canvasId, title);
+      const canvas = createNoDataCanvas(canvasId, title, 600, 320);
       document.body.appendChild(canvas);
       
       const imgData = canvas.toDataURL('image/png');
@@ -25,8 +25,8 @@ export const generateChartAsBase64 = (canvasId: string, chartData: ChartData, ch
     
     const canvas = document.createElement('canvas');
     canvas.id = canvasId;
-    canvas.width = 1000;  // Increased for better resolution
-    canvas.height = 550; // Increased for better resolution
+    canvas.width = 600;  // Smaller width for better PDF fit
+    canvas.height = 320; // Smaller height proportionally
     canvas.style.display = 'none';
     document.body.appendChild(canvas);
     
@@ -52,13 +52,16 @@ export const generateChartAsBase64 = (canvasId: string, chartData: ChartData, ch
       chart = createBarChart(ctx, chartData, title);
     }
     
-    const imgData = canvas.toDataURL('image/png', 1.0);  // Maximum quality
-    
-    if (chart) {
-      chart.destroy();
-    }
-    document.body.removeChild(canvas);
-    
-    resolve(imgData);
+    // Allow chart to render
+    setTimeout(() => {
+      const imgData = canvas.toDataURL('image/png', 1.0);
+      
+      if (chart) {
+        chart.destroy();
+      }
+      document.body.removeChild(canvas);
+      
+      resolve(imgData);
+    }, 100);
   });
 };

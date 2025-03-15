@@ -51,3 +51,13 @@ export interface BarChartData {
   xAxisLabel?: string;
   yAxisLabel?: string;
 }
+
+// TypeScript helper type for Chart.js LegendItem
+export interface CustomLegendItem {
+  text: string;
+  fillStyle: string;
+  strokeStyle: string;
+  lineWidth: number;
+  hidden: boolean;
+  index: number;
+}

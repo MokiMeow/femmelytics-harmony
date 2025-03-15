@@ -2,45 +2,51 @@
 import jsPDF from 'jspdf';
 import { format } from 'date-fns';
 
-export const addHeaderFooter = (doc: jsPDF, pageNumber: number): void => {
+export const addHeaderFooter = (doc: jsPDF, pageNumber: number) => {
   const pageWidth = doc.internal.pageSize.width;
   const pageHeight = doc.internal.pageSize.height;
   
-  // Add header with app name and border
-  doc.setFillColor(100, 45, 161); // Primary color
-  doc.rect(0, 0, pageWidth, pageNumber === 1 ? 20 : 15, 'F');
+  // Header
+  doc.setFillColor(102, 51, 153); // Purple color for header
+  doc.rect(0, 0, pageWidth, 15, 'F');
+  
   doc.setTextColor(255, 255, 255);
+  doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
+  doc.text('Feminalytics Health Report', pageWidth / 2, 10, { align: 'center' });
   
-  if (pageNumber === 1) {
-    // Title page has larger header
-    doc.setFontSize(16);
-    doc.text('Femmelytics Health Report', pageWidth / 2, 12, { align: 'center' });
-  } else {
-    // Content pages have smaller header
-    doc.setFontSize(12);
-    doc.text('Femmelytics Health Report', pageWidth / 2, 10, { align: 'center' });
-  }
-  
-  // Add footer with date and page number
+  // Footer
   doc.setDrawColor(200, 200, 200);
   doc.line(10, pageHeight - 15, pageWidth - 10, pageHeight - 15);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(100, 100, 100);
-  doc.text(`Generated on: ${format(new Date(), 'MMMM d, yyyy')}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
-  doc.text(`Page ${pageNumber}`, pageWidth - 20, pageHeight - 10);
   
-  // Reset text color for body content
-  doc.setTextColor(0, 0, 0);
+  doc.setTextColor(100, 100, 100);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  
+  const today = format(new Date(), 'MMMM dd, yyyy');
+  doc.text(`Generated on: ${today}`, 14, pageHeight - 10);
+  
+  doc.text(`Page ${pageNumber}`, pageWidth - 14, pageHeight - 10, { align: 'right' });
 };
 
-export const checkPageBreak = (doc: jsPDF, currentPage: number, minRemainingSpace: number): { newY: number, currentPage: number } => {
+export const checkPageBreak = (
+  doc: jsPDF, 
+  currentPage: number, 
+  requiredSpace: number
+): { newY: number, currentPage: number } => {
   const pageHeight = doc.internal.pageSize.height;
-  // Get current Y position from last table or fallback to a default
-  const currentY = (doc as any).lastAutoTable?.finalY || 25;
+  const safeBottomMargin = 25;
   
-  if (currentY > pageHeight - minRemainingSpace) {
+  // Calculate current Y position
+  let currentY = 25; // Default starting position
+  
+  // Try to get the Y position from the last auto table if available
+  if ((doc as any).lastAutoTable && (doc as any).lastAutoTable.finalY) {
+    currentY = (doc as any).lastAutoTable.finalY;
+  }
+  
+  // If we don't have enough space, add a new page
+  if (currentY + requiredSpace > pageHeight - safeBottomMargin) {
     doc.addPage();
     currentPage++;
     addHeaderFooter(doc, currentPage);

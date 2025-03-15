@@ -1,5 +1,5 @@
 
-import { Chart, ChartConfiguration } from 'chart.js';
+import { Chart } from 'chart.js';
 import { ChartData } from '../reportTypes';
 import { getCommonChartConfig } from './baseChartConfig';
 
@@ -14,9 +14,9 @@ export const createLineChart = (
       labels: chartData.labels,
       datasets: chartData.datasets?.map((dataset: any) => ({
         ...dataset,
-        borderWidth: 3,  // Thicker lines
-        pointRadius: 6,  // Larger points
-        pointHoverRadius: 9
+        borderWidth: 2,  // Thinner lines
+        pointRadius: 3,  // Smaller points
+        pointHoverRadius: 5
       })) || [],
     },
     options: {
@@ -26,32 +26,32 @@ export const createLineChart = (
           display: true,
           text: title,
           font: {
-            size: 24,
+            size: 18,
             weight: 'bold'
           },
           padding: {
-            top: 20,
-            bottom: 20
+            top: 10,
+            bottom: 15
           }
         },
         legend: {
           position: 'top',
           labels: {
-            boxWidth: 25,
-            padding: 20,
+            boxWidth: 15,
+            padding: 10,
             font: {
-              size: 16
+              size: 12
             }
           }
         },
         tooltip: {
           bodyFont: {
-            size: 16
+            size: 12
           },
           titleFont: {
-            size: 18
+            size: 14
           },
-          padding: 12
+          padding: 8
         }
       },
       scales: {
@@ -61,16 +61,17 @@ export const createLineChart = (
             display: true,
             text: chartData.yAxisLabel || 'Value',
             font: {
-              size: 18,
+              size: 14,
               weight: 'bold'
             }
           },
           ticks: {
             font: {
-              size: 16
+              size: 11
             },
-            padding: 12,
-            stepSize: 1
+            padding: 5,
+            stepSize: 1,
+            maxTicksLimit: 5
           },
           grid: {
             color: 'rgba(200, 200, 200, 0.3)'
@@ -81,17 +82,19 @@ export const createLineChart = (
             display: true,
             text: chartData.xAxisLabel || 'Date',
             font: {
-              size: 18,
+              size: 14,
               weight: 'bold'
             }
           },
           ticks: {
             font: {
-              size: 16
+              size: 11
             },
-            padding: 12,
+            padding: 5,
             maxRotation: 45,
-            minRotation: 0
+            minRotation: 0,
+            autoSkip: true,
+            maxTicksLimit: 10
           },
           grid: {
             color: 'rgba(200, 200, 200, 0.3)'

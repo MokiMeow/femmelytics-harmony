@@ -14,9 +14,9 @@ export const createBarChart = (
       labels: chartData.labels,
       datasets: chartData.datasets?.map((dataset: any) => ({
         ...dataset,
-        borderWidth: 2,
-        borderRadius: 6,  // Rounded bars
-        maxBarThickness: 65  // Thicker bars
+        borderWidth: 1,
+        borderRadius: 4,
+        maxBarThickness: 35
       })) || [],
     },
     options: {
@@ -26,44 +26,44 @@ export const createBarChart = (
           display: true,
           text: title,
           font: {
-            size: 24,
+            size: 18,
             weight: 'bold'
           },
           padding: {
-            top: 20,
-            bottom: 20
+            top: 10,
+            bottom: 15
           }
         },
         legend: {
-          display: false,  // Hide legend for better clarity in bar charts
+          display: false,
         },
         tooltip: {
           bodyFont: {
-            size: 16
+            size: 12
           },
           titleFont: {
-            size: 18
+            size: 14
           },
-          padding: 12
+          padding: 8
         }
       },
       scales: {
         y: {
           beginAtZero: true,
-          suggestedMax: 100,  // For percentages
+          max: 100,
           title: {
             display: true,
             text: chartData.yAxisLabel || 'Value',
             font: {
-              size: 18,
+              size: 14,
               weight: 'bold'
             }
           },
           ticks: {
             font: {
-              size: 16
+              size: 11
             },
-            padding: 12,
+            padding: 5,
             callback: (value) => `${value}%`
           },
           grid: {
@@ -73,11 +73,13 @@ export const createBarChart = (
         x: {
           ticks: {
             font: {
-              size: 16
+              size: 11
             },
-            padding: 12,
+            padding: 5,
             maxRotation: 45,
-            minRotation: 0
+            minRotation: 0,
+            autoSkip: true,
+            maxTicksLimit: 8
           },
           grid: {
             color: 'rgba(200, 200, 200, 0.3)'

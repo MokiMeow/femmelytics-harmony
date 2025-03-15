@@ -10,16 +10,26 @@ export const prepareSymptomChartData = (symptomsData: any[]): ChartData => {
     symptomCounts[symptom] = (symptomCounts[symptom] || 0) + 1;
   });
   
+  // Convert to array and sort by count (descending)
+  const sortedSymptoms = Object.entries(symptomCounts)
+    .sort(([, countA], [, countB]) => countB - countA)
+    .slice(0, 5); // Limit to top 5 for clarity
+    
   return {
-    labels: Object.keys(symptomCounts),
-    values: Object.values(symptomCounts),
+    labels: sortedSymptoms.map(([symptom]) => symptom),
+    values: sortedSymptoms.map(([, count]) => count),
   };
 };
 
 export const prepareMoodChartData = (moodData: any[]): ChartData => {
-  const dates = moodData.map(entry => format(new Date(entry.date), 'MMM d'));
-  const moodScores = moodData.map(entry => entry.mood_score);
-  const energyScores = moodData.map(entry => entry.energy_score);
+  // Sort by date and limit to last 14 entries for better readability
+  const sortedData = [...moodData]
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .slice(-14);
+    
+  const dates = sortedData.map(entry => format(new Date(entry.date), 'MMM d'));
+  const moodScores = sortedData.map(entry => entry.mood_score);
+  const energyScores = sortedData.map(entry => entry.energy_score);
   
   return {
     labels: dates,
@@ -73,7 +83,8 @@ export const prepareMedicationAdherenceChartData = (medicationsData: any[], medi
   const medicationNames: string[] = [];
   const adherenceValues: number[] = [];
   
-  medicationsData.forEach(med => {
+  // Limit to top 5 medications for clarity
+  medicationsData.slice(0, 5).forEach(med => {
     if (med.id) {
       const history = medicationGroups[med.id] || [];
       // Simplified calculation - percentage of days in the period the medication was taken
@@ -81,7 +92,9 @@ export const prepareMedicationAdherenceChartData = (medicationsData: any[], medi
       const totalPossibleDays = 30; // Assuming a 30-day period
       const adherence = Math.round((takenDays / totalPossibleDays) * 100);
       
-      medicationNames.push(med.name);
+      // Truncate long medication names
+      const displayName = med.name.length > 12 ? med.name.substring(0, 10) + '...' : med.name;
+      medicationNames.push(displayName);
       adherenceValues.push(adherence);
     }
   });
@@ -93,7 +106,7 @@ export const prepareMedicationAdherenceChartData = (medicationsData: any[], medi
       data: adherenceValues,
       backgroundColor: 'rgba(75, 192, 192, 0.7)',
       borderColor: 'rgba(75, 192, 192, 1)',
-      borderWidth: 2,
+      borderWidth: 1,
       borderRadius: 4,
     }],
     yAxisLabel: 'Adherence (%)',
