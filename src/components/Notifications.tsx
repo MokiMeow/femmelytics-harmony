@@ -53,11 +53,19 @@ const Notifications = () => {
           const predictionDate = parseISO(statsData.next_predicted_date);
           const daysUntil = Math.ceil((predictionDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
           
-          if (daysUntil <= 3 && daysUntil >= 0) {
+          if (daysUntil <= 5 && daysUntil >= 0) {
             tempNotifications.push({
               id: 'period-prediction',
               title: 'Period Coming Soon',
-              message: `Your period is predicted to start in ${daysUntil === 0 ? 'today' : daysUntil === 1 ? 'tomorrow' : `${daysUntil} days`}.`,
+              message: `Your period is predicted to start in ${daysUntil === 0 ? 'today' : daysUntil === 1 ? 'tomorrow' : `${daysUntil} days`}. Consider stocking up on supplies.`,
+              date: new Date().toISOString(),
+              read: false
+            });
+          } else if (daysUntil === -1) {
+            tempNotifications.push({
+              id: 'period-started',
+              title: 'Period Predicted Today',
+              message: 'Your period is predicted to have started today. Track your flow to improve future predictions.',
               date: new Date().toISOString(),
               read: false
             });
@@ -81,6 +89,15 @@ const Notifications = () => {
             read: false
           });
         }
+        
+        // Add chat suggestion
+        tempNotifications.push({
+          id: 'luna-chat',
+          title: 'Chat with Luna',
+          message: 'Need advice or information? Chat with Luna, your AI health assistant.',
+          date: new Date().toISOString(),
+          read: false
+        });
         
         setNotifications(tempNotifications);
         setUnreadCount(tempNotifications.filter(n => !n.read).length);

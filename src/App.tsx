@@ -11,6 +11,7 @@ import Track from "./pages/Track";
 import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
 import ProfilePage from "./pages/ProfilePage";
+import Chat from "./pages/Chat";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import About from "./pages/About";
@@ -41,6 +42,11 @@ const App = () => (
             <Route path="/profile" element={
               <ProtectedRoute>
                 <ProfilePage />
+              </ProtectedRoute>
+            } />
+            <Route path="/chat" element={
+              <ProtectedRoute>
+                <Chat />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

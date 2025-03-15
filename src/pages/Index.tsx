@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Calendar, Sparkles, Shield, BarChart, Activity, CheckCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Navigation from '@/components/Navigation';
+import { fadeInUp } from '@/utils/animations';
+import Card from '@/components/Card';
 
 const Index = () => {
   useEffect(() => {
@@ -57,47 +59,32 @@ const Index = () => {
       {/* Hero Section */}
       <section className="pt-32 pb-16 md:pt-40 md:pb-24">
         <div className="container px-4 md:px-6">
-          <div className="flex flex-col items-center text-center space-y-4">
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, ease: [0.23, 1, 0.32, 1] }}
-              className="inline-flex items-center rounded-full border border-lavender-200 bg-lavender-50 px-3 py-1 text-sm text-lavender-700"
-            >
-              <Sparkles className="mr-1 h-3.5 w-3.5" />
-              <span>Introducing Femmelytics</span>
-            </motion.div>
-            
+          <div className="text-center max-w-3xl mx-auto">
             <motion.h1 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.1, ease: [0.23, 1, 0.32, 1] }}
-              className="text-4xl font-semibold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl max-w-3xl"
+              variants={fadeInUp}
+              className="text-4xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-lavender-600 to-primary text-transparent bg-clip-text"
             >
-              Your personal health insights, <span className="text-transparent bg-clip-text bg-gradient-to-r from-lavender-500 to-teal-500">intelligently analyzed</span>
+              Track Your Cycle, Transform Your Life
             </motion.h1>
-            
-            <motion.p 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.2, ease: [0.23, 1, 0.32, 1] }}
-              className="text-lg text-muted-foreground max-w-2xl mb-2"
+            <motion.p
+              variants={fadeInUp}
+              className="mt-6 text-xl text-muted-foreground"
             >
-              Track, visualize, and understand your health with AI-powered insights that help you make informed decisions.
+              Empowering women with personalized insights and AI-powered health assistance
             </motion.p>
-            
             <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.3, ease: [0.23, 1, 0.32, 1] }}
-              className="flex flex-col sm:flex-row gap-4 mt-4"
+              variants={fadeInUp}
+              className="mt-8 flex flex-col sm:flex-row gap-4 justify-center"
             >
-              <Link to="/track" className="premium-button bg-primary text-white">
-                <span>Get Started</span>
-                <ArrowRight className="ml-2 h-4 w-4" />
+              <Link to="/auth?tab=signup">
+                <Button size="lg" className="w-full sm:w-auto">
+                  Create Free Account
+                </Button>
               </Link>
-              <Link to="/about" className="premium-button bg-muted text-foreground hover:bg-muted/80">
-                Learn More
+              <Link to="/about">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto">
+                  Learn More
+                </Button>
               </Link>
             </motion.div>
           </div>
@@ -184,15 +171,26 @@ const Index = () => {
               viewport={{ once: true }}
               className="relative"
             >
-              <Link to="/dashboard" className="block bg-gradient-to-br from-lavender-100 to-teal-100 rounded-2xl p-1 transition-transform hover:scale-[1.02]">
-                <div className="rounded-xl overflow-hidden shadow-lg border border-white/50">
+              <Card className="col-span-2 lg:col-span-1 overflow-hidden flex flex-col sm:flex-row">
+                <div className="sm:w-2/5 p-6 flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-xl font-semibold mb-2">Dashboard Preview</h3>
+                    <p className="text-muted-foreground mb-4">Visualize your patterns and gain insights</p>
+                  </div>
+                  <div>
+                    <Link to="/auth">
+                      <Button variant="outline" className="w-full">Explore</Button>
+                    </Link>
+                  </div>
+                </div>
+                <div className="sm:w-3/5 bg-muted p-4 flex items-center justify-center">
                   <img 
-                    src="https://plus.unsplash.com/premium_photo-1681487390299-4d6fab146093?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+                    src="/dashboard-preview.png" 
                     alt="Dashboard Preview" 
-                    className="w-full h-auto rounded-xl"
+                    className="rounded-md shadow-md max-w-full h-auto object-cover"
                   />
                 </div>
-              </Link>
+              </Card>
               
               {/* Float elements */}
               <div className="absolute -top-8 -right-8 bg-white rounded-xl shadow-lg p-4 animate-float">
@@ -345,3 +343,4 @@ const Index = () => {
 };
 
 export default Index;
+

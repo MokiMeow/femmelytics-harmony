@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Activity, Heart, BarChart3, LineChart as LucideLineChart, TrendingUp, MoreHorizontal, Filter, Info, Droplet, Moon, Clock, AlertCircle, Star, Thermometer } from 'lucide-react';
+import { Calendar, Activity, Heart, BarChart3, LineChart as LucideLineChart, TrendingUp, MoreHorizontal, Filter, Info, Droplet, Moon, Clock, AlertCircle, Star, Thermometer, MessageSquareIcon } from 'lucide-react';
 import Navigation from '@/components/Navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -663,10 +663,10 @@ const Dashboard = () => {
             </div>
           </TabsContent>
         </Tabs>
-      </div>
-    </div>
-  );
-};
-
-export default Dashboard;
+        
+        <div className="mt-8">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xl flex items-center">
+               
 
