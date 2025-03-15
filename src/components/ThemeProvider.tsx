@@ -47,8 +47,10 @@ export function ThemeProvider({
       // Apply a specific attribute for deeper dark mode customization
       if (systemTheme === "dark") {
         root.setAttribute("data-enhanced-dark", "true");
+        document.body.style.backgroundColor = "#1A1F2C";
       } else {
         root.removeAttribute("data-enhanced-dark");
+        document.body.style.backgroundColor = "";
       }
       return;
     }
@@ -58,8 +60,10 @@ export function ThemeProvider({
     // Apply a specific attribute for deeper dark mode customization
     if (theme === "dark") {
       root.setAttribute("data-enhanced-dark", "true");
+      document.body.style.backgroundColor = "#1A1F2C";
     } else {
       root.removeAttribute("data-enhanced-dark");
+      document.body.style.backgroundColor = "";
     }
     
     // Save theme to localStorage for persistence
@@ -80,8 +84,10 @@ export function ThemeProvider({
         // Apply a specific attribute for deeper dark mode customization
         if (systemTheme === "dark") {
           root.setAttribute("data-enhanced-dark", "true");
+          document.body.style.backgroundColor = "#1A1F2C";
         } else {
           root.removeAttribute("data-enhanced-dark");
+          document.body.style.backgroundColor = "";
         }
       }
     };

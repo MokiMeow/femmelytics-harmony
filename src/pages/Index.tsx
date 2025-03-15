@@ -14,7 +14,7 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden">
+    <div className="min-h-screen w-full overflow-x-hidden bg-background dark:bg-gradient-to-b dark:from-background dark:to-background">
       <Navigation />
       <HeroSection />
       <FeatureSection />
