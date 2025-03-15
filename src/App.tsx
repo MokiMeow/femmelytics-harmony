@@ -15,6 +15,10 @@ import Chat from "./pages/Chat";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import About from "./pages/About";
+import Journal from "./pages/Journal";
+import Forums from "./pages/Forums";
+import Library from "./pages/Library";
+import Medications from "./pages/Medications";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +51,27 @@ const App = () => (
             <Route path="/chat" element={
               <ProtectedRoute>
                 <Chat />
+              </ProtectedRoute>
+            } />
+            {/* Health Resources routes */}
+            <Route path="/journal" element={
+              <ProtectedRoute>
+                <Journal />
+              </ProtectedRoute>
+            } />
+            <Route path="/forums" element={
+              <ProtectedRoute>
+                <Forums />
+              </ProtectedRoute>
+            } />
+            <Route path="/library" element={
+              <ProtectedRoute>
+                <Library />
+              </ProtectedRoute>
+            } />
+            <Route path="/medications" element={
+              <ProtectedRoute>
+                <Medications />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
