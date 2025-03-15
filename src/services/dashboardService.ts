@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { format, addDays, parseISO, subDays, eachDayOfInterval } from 'date-fns';
+import { format, addDays, parseISO, subDays, eachDayOfInterval, differenceInDays } from 'date-fns';
 import { CycleEntry, MoodEntry, SymptomEntry, CycleStatistics } from './trackerService';
 
 export interface DashboardData {
@@ -8,6 +8,7 @@ export interface DashboardData {
   moodEntries: MoodEntry[];
   symptoms: SymptomEntry[];
   statistics: CycleStatistics | null;
+  consistencyScore: number;
   cycleChartData: {
     day: string;
     flow: number;
@@ -112,11 +113,21 @@ export const fetchDashboardData = async (days: number = 30): Promise<DashboardDa
     // Generate cycle length data
     const cycleLengthData = await processCycleLengthData(userId);
     
+    // Calculate consistency score based on real data
+    const consistencyScore = calculateConsistencyScore(
+      cycleData || [], 
+      moodData || [], 
+      symptomsData || [],
+      days,
+      statsData
+    );
+    
     return {
       cycleEntries: cycleData || [],
       moodEntries: moodData || [],
       symptoms: symptomsData || [],
       statistics: statsData,
+      consistencyScore,
       cycleChartData,
       symptomsPieData,
       moodTrendData,
@@ -126,6 +137,129 @@ export const fetchDashboardData = async (days: number = 30): Promise<DashboardDa
     console.error('Error fetching dashboard data:', error);
     throw error;
   }
+};
+
+// Calculate a consistency score based on tracking data
+const calculateConsistencyScore = (
+  cycleData: CycleEntry[],
+  moodData: MoodEntry[],
+  symptomsData: SymptomEntry[],
+  timeRange: number,
+  statistics?: CycleStatistics | null
+): number => {
+  // If no data, return 0 score
+  if (cycleData.length === 0 && moodData.length === 0 && symptomsData.length === 0) {
+    return 0;
+  }
+  
+  // 1. Tracking frequency (40% of score)
+  const uniqueTrackedDates = new Set<string>();
+  
+  cycleData.forEach(entry => uniqueTrackedDates.add(entry.date as string));
+  moodData.forEach(entry => uniqueTrackedDates.add(entry.date as string));
+  
+  // Get unique dates from symptoms
+  const symptomDates = new Set<string>();
+  symptomsData.forEach(entry => symptomDates.add(entry.date as string));
+  
+  // Add symptom dates to total tracked dates
+  symptomDates.forEach(date => uniqueTrackedDates.add(date));
+  
+  // Calculate tracking frequency score (out of 40 points)
+  const trackedDaysCount = uniqueTrackedDates.size;
+  const expectedDaysToTrack = Math.min(timeRange, 30); // We expect tracking for at most 30 days
+  const trackingFrequencyScore = Math.min(40, Math.round((trackedDaysCount / expectedDaysToTrack) * 40));
+  
+  // 2. Data completeness (30% of score)
+  // Calculate what percentage of tracked days have all three data types (cycle, mood, and at least one symptom)
+  let completeDataDays = 0;
+  
+  uniqueTrackedDates.forEach(date => {
+    const hasCycleData = cycleData.some(entry => entry.date === date);
+    const hasMoodData = moodData.some(entry => entry.date === date);
+    const hasSymptomData = symptomsData.some(entry => entry.date === date);
+    
+    if (hasCycleData && hasMoodData && hasSymptomData) {
+      completeDataDays++;
+    }
+  });
+  
+  const completenessScore = Math.round((completeDataDays / Math.max(1, uniqueTrackedDates.size)) * 30);
+  
+  // 3. Cycle regularity (30% of score)
+  let regularityScore = 0;
+  
+  if (statistics && statistics.average_cycle_length && cycleData.length > 0) {
+    // Fetch more historical cycle data to assess regularity
+    const cycleStartDates: Date[] = [];
+    const flowDays = cycleData.filter(entry => entry.flow_intensity !== 'none');
+    
+    if (flowDays.length > 0) {
+      // Sort flow days by date
+      const sortedFlowDays = [...flowDays].sort((a, b) => {
+        const dateA = new Date(a.date as string);
+        const dateB = new Date(b.date as string);
+        return dateA.getTime() - dateB.getTime();
+      });
+      
+      // Find period start dates (first day of consecutive flow days)
+      let lastDate: string | null = null;
+      
+      sortedFlowDays.forEach(entry => {
+        const currentDate = entry.date as string;
+        if (!lastDate || differenceInDays(parseISO(currentDate), parseISO(lastDate)) > 3) {
+          cycleStartDates.push(parseISO(currentDate));
+        }
+        lastDate = currentDate;
+      });
+      
+      // Calculate cycle length variation
+      if (cycleStartDates.length >= 2) {
+        const cycleLengths: number[] = [];
+        
+        for (let i = 1; i < cycleStartDates.length; i++) {
+          cycleLengths.push(differenceInDays(cycleStartDates[i], cycleStartDates[i - 1]));
+        }
+        
+        if (cycleLengths.length > 0) {
+          // Calculate standard deviation
+          const avgCycleLength = cycleLengths.reduce((sum, len) => sum + len, 0) / cycleLengths.length;
+          const squaredDiffs = cycleLengths.map(len => Math.pow(len - avgCycleLength, 2));
+          const avgSquaredDiff = squaredDiffs.reduce((sum, diff) => sum + diff, 0) / squaredDiffs.length;
+          const stdDev = Math.sqrt(avgSquaredDiff);
+          
+          // Calculate regularity score based on standard deviation
+          // Lower standard deviation = more regular cycles = higher score
+          const variationCoefficient = (stdDev / avgCycleLength) * 100;
+          
+          if (variationCoefficient <= 5) {
+            regularityScore = 30; // Very regular (variation < 5%)
+          } else if (variationCoefficient <= 10) {
+            regularityScore = 25; // Regular (variation 5-10%)
+          } else if (variationCoefficient <= 15) {
+            regularityScore = 20; // Somewhat regular (variation 10-15%)
+          } else if (variationCoefficient <= 25) {
+            regularityScore = 15; // Slightly irregular (variation 15-25%)
+          } else {
+            regularityScore = 10; // Irregular (variation > 25%)
+          }
+        } else {
+          regularityScore = 10; // Default score if calculation isn't possible
+        }
+      } else if (statistics && statistics.average_cycle_length) {
+        regularityScore = 15; // Default score if there's at least some statistics
+      }
+    } else if (statistics && statistics.average_cycle_length) {
+      regularityScore = 15; // Default score if there's at least some statistics
+    }
+  } else if (cycleData.length > 0) {
+    regularityScore = 10; // Some cycle data but not enough for statistics
+  }
+  
+  // Calculate final score
+  const totalScore = trackingFrequencyScore + completenessScore + regularityScore;
+  
+  return totalScore;
 };
 
 // Process data for cycle chart

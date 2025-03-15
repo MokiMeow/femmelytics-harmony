@@ -485,7 +485,7 @@ const Dashboard = () => {
                       <div className="p-3 rounded-lg bg-coral-50 border border-coral-200">
                         <div className="text-sm text-coral-700 font-medium mb-1">Consistency Score</div>
                         <div className="text-2xl font-semibold flex items-center">
-                          <span>{dashboardData?.statistics?.average_cycle_length ? '92' : '-'}</span>
+                          <span>{dashboardData?.consistencyScore || '-'}</span>
                           <span className="text-sm ml-1 text-muted-foreground">/ 100</span>
                         </div>
                       </div>
