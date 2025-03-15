@@ -52,7 +52,7 @@ const FooterSection = () => {
         
         <div className="border-t border-border mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
           <p className="text-sm text-muted-foreground">
-            © 2023 Femmelytics. All rights reserved.
+            © 2025 Femmelytics. All rights reserved.
           </p>
           
           <div className="flex space-x-4 mt-4 md:mt-0">

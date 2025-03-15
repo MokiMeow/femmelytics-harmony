@@ -109,16 +109,17 @@ async function handleChatRequest(req: Request) {
   ${context}
   
   Provide empathetic, evidence-based advice for women's health questions.
-  Keep responses concise and under 1000 characters when possible to ensure they can be spoken out loud effectively.
-  If asked to recommend books, suggest relevant titles about women's health, menstrual cycle health, hormonal balance, and female wellness.
-  If asked to recommend videos, suggest watching content on topics like cycle syncing, period nutrition, hormonal health exercises, or stress reduction.
-  If asked about period products, provide information about various options, their benefits, and considerations.
-  If period is approaching soon, remind about stocking up on necessary supplies.
+  IMPORTANT: Keep responses concise and under 600 characters to ensure they can be spoken out loud effectively.
+  Use short paragraphs and simple language.
+  If asked to recommend books, suggest only 2-3 relevant titles about women's health.
+  If asked to recommend videos, suggest only 2-3 watching content topics.
+  If asked about period products, provide concise information about various options.
+  If period is approaching soon, add a brief reminder about supplies.
   
   Do NOT respond to questions unrelated to women's health, wellbeing, or the menstrual cycle.
   Do NOT provide medical diagnosis or claim to replace professional medical advice.
   
-  Keep responses supportive and practical.`;
+  Keep responses supportive, practical and very concise.`;
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -132,7 +133,7 @@ async function handleChatRequest(req: Request) {
         { role: 'system', content: systemPrompt },
         { role: 'user', content: message }
       ],
-      max_tokens: 1000,
+      max_tokens: 600,
       temperature: 0.7,
     }),
   });
@@ -163,37 +164,79 @@ async function handleTextToSpeechRequest(req: Request) {
       );
     }
 
-    // Limit text length to prevent TTS errors
-    const limitedText = text.length > 1000 ? text.substring(0, 1000) + "..." : text;
+    // Hard limit text length to prevent TTS errors
+    const MAX_TTS_LENGTH = 500;
+    const limitedText = text.length > MAX_TTS_LENGTH 
+      ? text.substring(0, MAX_TTS_LENGTH) + "... (message truncated for voice playback)"
+      : text;
+    
     console.log(`Processing TTS request with ${limitedText.length} characters`);
 
-    const response = await fetch('https://api.openai.com/v1/audio/speech', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'tts-1',
-        input: limitedText,
-        voice: voice,
-        response_format: 'mp3',
-      }),
-    });
+    try {
+      const response = await fetch('https://api.openai.com/v1/audio/speech', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'tts-1',
+          input: limitedText,
+          voice: voice,
+          response_format: 'mp3',
+        }),
+      });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('TTS API error:', errorData);
-      throw new Error(errorData.error?.message || 'Text-to-speech request failed');
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('TTS API error:', errorData);
+        throw new Error(errorData.error?.message || 'Text-to-speech request failed');
+      }
+
+      const audioBuffer = await response.arrayBuffer();
+      const base64Audio = btoa(String.fromCharCode(...new Uint8Array(audioBuffer)));
+
+      return new Response(
+        JSON.stringify({ audioContent: base64Audio }),
+        { headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    } catch (error) {
+      console.error('OpenAI TTS API error:', error);
+      
+      // Attempt with even shorter text if it fails
+      if (limitedText.length > 200) {
+        console.log("Retrying with shorter text");
+        const shorterText = limitedText.substring(0, 200) + "... (message truncated)";
+        
+        const retryResponse = await fetch('https://api.openai.com/v1/audio/speech', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${OPENAI_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'tts-1',
+            input: shorterText,
+            voice: voice,
+            response_format: 'mp3',
+          }),
+        });
+        
+        if (!retryResponse.ok) {
+          throw new Error("Failed to generate speech even with shortened text");
+        }
+        
+        const audioBuffer = await retryResponse.arrayBuffer();
+        const base64Audio = btoa(String.fromCharCode(...new Uint8Array(audioBuffer)));
+
+        return new Response(
+          JSON.stringify({ audioContent: base64Audio }),
+          { headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        );
+      }
+      
+      throw error;
     }
-
-    const audioBuffer = await response.arrayBuffer();
-    const base64Audio = btoa(String.fromCharCode(...new Uint8Array(audioBuffer)));
-
-    return new Response(
-      JSON.stringify({ audioContent: base64Audio }),
-      { headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-    );
   } catch (error) {
     console.error('Text-to-speech error:', error);
     return new Response(
