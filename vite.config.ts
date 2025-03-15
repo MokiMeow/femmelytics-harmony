@@ -24,8 +24,7 @@ export default defineConfig(({ mode }) => ({
   build: {
     assetsDir: `assets_${buildId}`,
     rollupOptions: {
-      // Mark zod as an external dependency
-      external: ['zod'],
+      // Removed external: ['zod'],
       output: {
         entryFileNames: `assets/[name]-${buildId}-[hash].js`,
         chunkFileNames: `assets/[name]-${buildId}-[hash].js`,
