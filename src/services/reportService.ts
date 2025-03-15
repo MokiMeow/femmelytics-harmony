@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import jsPDF from 'jspdf';
@@ -636,15 +635,15 @@ const createPDFReport = async (reportData: any, includeCharts: boolean): Promise
   
   // Function to handle page breaks and header/footer
   const checkPageBreak = (minRemainingSpace: number) => {
-    // Fix: Replace getCurrentPosition with the correct way to get the current Y position
-    const currentY = doc.internal.getCurrentPositionY();
-    if (currentY > pageHeight - minRemainingSpace) {
+    // Use the correct method to get Y position in jsPDF
+    const currentY = (doc as any).lastAutoTable?.finalY || doc.internal.getVerticalCoordinateString();
+    if (parseFloat(currentY) > pageHeight - minRemainingSpace) {
       doc.addPage();
       currentPage++;
       addHeaderFooter(currentPage);
       return 25; // New Y position after page break
     }
-    return currentY;
+    return parseFloat(currentY);
   };
   
   yPosition = 25;
@@ -858,121 +857,4 @@ const createPDFReport = async (reportData: any, includeCharts: boolean): Promise
     ]);
     
     autoTable(doc, {
-      head: [['Name', 'Dosage', 'Frequency', 'Time', 'Start Date', 'End Date', 'Notes']],
-      body: medicationsTableData,
-      startY: yPosition,
-      headStyles: {
-        fillColor: [54, 162, 235],
-        textColor: [255, 255, 255],
-        fontStyle: 'bold',
-      },
-      alternateRowStyles: {
-        fillColor: [240, 245, 255],
-      },
-      styles: { cellWidth: 'auto' },
-      columnStyles: { 6: { cellWidth: 40 } }
-    });
-    
-    yPosition = (doc as any).lastAutoTable.finalY + 15;
-    
-    // Add medication adherence chart if history data is available
-    if (includeCharts && reportData.medicationHistoryData && reportData.medicationHistoryData.length > 0) {
-      yPosition = checkPageBreak(120);
-      
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Medication Adherence', 14, yPosition);
-      yPosition += 10;
-      
-      const medicationChartData = prepareMedicationAdherenceChartData(
-        reportData.medicationsData, 
-        reportData.medicationHistoryData
-      );
-      
-      try {
-        const chartImgData = await generateChartAsBase64(
-          'medication-chart', 
-          medicationChartData, 
-          'bar', 
-          'Medication Adherence (%)'
-        );
-        
-        const imgWidth = 170;
-        const imgHeight = 90;
-        doc.addImage(chartImgData, 'PNG', (pageWidth - imgWidth) / 2, yPosition, imgWidth, imgHeight);
-        yPosition += imgHeight + 20;
-      } catch (error) {
-        console.error('Error generating medication chart:', error);
-        yPosition += 10;
-      }
-    }
-  }
-  
-  if (reportData.summary) {
-    yPosition = checkPageBreak(30);
-    
-    doc.setFontSize(16);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Health Summary (AI Generated)', 14, yPosition);
-    yPosition += 10;
-    
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'normal');
-    const splitText = doc.splitTextToSize(reportData.summary, 180);
-    doc.text(splitText, 14, yPosition);
-  }
-  
-  return doc.output('blob');
-};
-
-export const syncWithGoogleCalendar = async (calendarId: string, accessToken: string): Promise<boolean> => {
-  try {
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    if (userError) throw userError;
-    
-    const userId = userData.user?.id;
-    if (!userId) throw new Error('User not authenticated');
-    
-    const { data: cycleData, error: cycleError } = await supabase
-      .from('cycle_statistics')
-      .select('next_predicted_date, average_period_length, average_cycle_length')
-      .eq('user_id', userId)
-      .single();
-      
-    if (cycleError) throw cycleError;
-    if (!cycleData?.next_predicted_date) return false;
-    
-    const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        summary: 'Period Start Date',
-        description: 'Predicted start of your next menstrual cycle',
-        start: {
-          date: cycleData.next_predicted_date
-        },
-        end: {
-          date: format(new Date(new Date(cycleData.next_predicted_date).getTime() + 
-            (cycleData.average_period_length || 5) * 24 * 60 * 60 * 1000), 'yyyy-MM-dd')
-        },
-        colorId: '11',
-        reminders: {
-          useDefault: false,
-          overrides: [{ method: 'popup', minutes: 24 * 60 }]
-        }
-      })
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Failed to create calendar event: ${response.statusText}`);
-    }
-    
-    return true;
-  } catch (error) {
-    console.error('Error syncing with Google Calendar:', error);
-    return false;
-  }
-};
+      head: [['Name', 'Dosage', 'Frequency', 'Time', 'Start
