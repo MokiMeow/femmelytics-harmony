@@ -636,14 +636,15 @@ const createPDFReport = async (reportData: any, includeCharts: boolean): Promise
   
   // Function to handle page breaks and header/footer
   const checkPageBreak = (minRemainingSpace: number) => {
-    const currentPosition = doc.internal.getCurrentPosition();
-    if (currentPosition.y > pageHeight - minRemainingSpace) {
+    // Fix: Replace getCurrentPosition with the correct way to get the current Y position
+    const currentY = doc.internal.getCurrentPositionY();
+    if (currentY > pageHeight - minRemainingSpace) {
       doc.addPage();
       currentPage++;
       addHeaderFooter(currentPage);
       return 25; // New Y position after page break
     }
-    return currentPosition.y;
+    return currentY;
   };
   
   yPosition = 25;
