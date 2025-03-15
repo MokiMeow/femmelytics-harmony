@@ -1,4 +1,3 @@
-
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
@@ -128,10 +127,10 @@ export const createPDFReport = async (reportData: any, includeCharts: boolean): 
   
   addHeaderFooter(currentPage);
   
-  // Function to handle page breaks and header/footer
+  // Function to handle page breaks and header/footer - Fixed to use proper y position tracking
   const checkPageBreak = (minRemainingSpace: number) => {
-    // Fixed: Use internal.getCurrentPageInfo().pageNumber to get current position
-    const currentY = (doc as any).lastAutoTable?.finalY || doc.internal.getCurrentPageInfo().y || 25;
+    // Correctly get current Y position using lastAutoTable or direct Y tracking
+    const currentY = (doc as any).lastAutoTable?.finalY || doc.previousAutoTable?.finalY || 25;
     if (currentY > pageHeight - minRemainingSpace) {
       doc.addPage();
       currentPage++;

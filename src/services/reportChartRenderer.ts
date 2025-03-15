@@ -1,4 +1,3 @@
-
 import { Chart, registerables, ChartConfiguration, LegendItem } from 'chart.js';
 import { ChartData } from './reportTypes';
 
@@ -236,15 +235,18 @@ export const generateChartAsBase64 = (canvasId: string, chartData: ChartData, ch
                 font: {
                   size: 16  // Larger legend text
                 },
-                // Fix: Generate more readable labels with percentages
-                generateLabels: function(chart) {
+                // Fixed generateLabels function to return LegendItem[] with proper types
+                generateLabels: function(chart): LegendItem[] {
                   const datasets = chart.data.datasets;
-                  const totalValue = datasets[0].data.reduce((sum: number, value: any) => {
-                    return sum + (typeof value === 'number' ? value : 0);
+                  const totalValue = datasets[0].data.reduce((sum: number, value) => {
+                    // Make sure we're only adding number values
+                    const numValue = typeof value === 'number' ? value : 0;
+                    return sum + numValue;
                   }, 0);
                   
-                  return chart.data.labels.map((label, i) => {
+                  return chart.data.labels?.map((label, i) => {
                     const value = datasets[0].data[i];
+                    // Make sure we're working with numbers
                     const numValue = typeof value === 'number' ? value : 0;
                     const percentage = totalValue > 0 ? Math.round((numValue / totalValue) * 100) : 0;
                     
@@ -255,8 +257,8 @@ export const generateChartAsBase64 = (canvasId: string, chartData: ChartData, ch
                       lineWidth: 2, // Fixed lineWidth as a number
                       hidden: isNaN(numValue) || numValue === 0,
                       index: i
-                    } as LegendItem;
-                  });
+                    };
+                  }) || [];
                 }
               }
             },
@@ -271,10 +273,14 @@ export const generateChartAsBase64 = (canvasId: string, chartData: ChartData, ch
               callbacks: {
                 label: (context) => {
                   const dataset = context.dataset;
-                  const total = dataset.data.reduce((sum: number, value: any) => {
-                    return sum + (typeof value === 'number' ? value : 0);
+                  // Safely calculate the total with type checking
+                  const total = dataset.data.reduce((sum: number, value) => {
+                    // Make sure we're only adding number values
+                    const numValue = typeof value === 'number' ? value : 0;
+                    return sum + numValue;
                   }, 0);
                   const value = dataset.data[context.dataIndex];
+                  // Make sure we're working with numbers
                   const numValue = typeof value === 'number' ? value : 0;
                   const percentage = total > 0 ? Math.round((numValue / total) * 100) : 0;
                   return `${context.label}: ${numValue} (${percentage}%)`;
