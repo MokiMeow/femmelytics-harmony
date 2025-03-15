@@ -12,24 +12,24 @@ export const prepareSymptomChartData = (symptomsData: any[]): ChartData => {
   
   // Convert to array and sort by count (descending)
   const sortedSymptoms = Object.entries(symptomCounts)
-    .sort(([, countA], [, countB]) => countB - countA)
+    .sort(([, countA], [, countB]) => (countB as number) - (countA as number))
     .slice(0, 5); // Limit to top 5 for clarity
     
   return {
     labels: sortedSymptoms.map(([symptom]) => symptom),
-    values: sortedSymptoms.map(([, count]) => count),
+    values: sortedSymptoms.map(([, count]) => count as number),
   };
 };
 
 export const prepareMoodChartData = (moodData: any[]): ChartData => {
-  // Sort by date and limit to last 14 entries for better readability
+  // Sort by date and limit to last 10 entries for better readability
   const sortedData = [...moodData]
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    .slice(-14);
+    .slice(-10);
     
   const dates = sortedData.map(entry => format(new Date(entry.date), 'MMM d'));
-  const moodScores = sortedData.map(entry => entry.mood_score);
-  const energyScores = sortedData.map(entry => entry.energy_score);
+  const moodScores = sortedData.map(entry => entry.mood_score || 0);
+  const energyScores = sortedData.map(entry => entry.energy_score || 0);
   
   return {
     labels: dates,
@@ -62,9 +62,13 @@ export const prepareCyclePhaseChartData = (cycleData: any[]): ChartData => {
     phaseCounts[phase] = (phaseCounts[phase] || 0) + 1;
   });
   
+  // Convert to array and sort by count
+  const sortedPhases = Object.entries(phaseCounts)
+    .sort(([, countA], [, countB]) => (countB as number) - (countA as number));
+    
   return {
-    labels: Object.keys(phaseCounts),
-    values: Object.values(phaseCounts),
+    labels: sortedPhases.map(([phase]) => phase),
+    values: sortedPhases.map(([, count]) => count as number),
   };
 };
 
@@ -93,7 +97,7 @@ export const prepareMedicationAdherenceChartData = (medicationsData: any[], medi
       const adherence = Math.round((takenDays / totalPossibleDays) * 100);
       
       // Truncate long medication names
-      const displayName = med.name.length > 12 ? med.name.substring(0, 10) + '...' : med.name;
+      const displayName = med.name.length > 10 ? med.name.substring(0, 8) + '...' : med.name;
       medicationNames.push(displayName);
       adherenceValues.push(adherence);
     }

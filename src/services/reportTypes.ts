@@ -9,6 +9,7 @@ export interface ExportOptions {
   endDate?: Date;    // For custom date range
   includeCharts: boolean;
   includeSummary: boolean;
+  medicationFilter?: string; // 'all' or comma-separated medication IDs
 }
 
 export interface ChartData {

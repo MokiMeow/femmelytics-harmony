@@ -12,7 +12,8 @@ export const addMedicationsSection = async (
   medicationHistoryData: any[],
   includeCharts: boolean,
   yPosition: number,
-  currentPage: number
+  currentPage: number,
+  medicationFilter: string = 'all'
 ): Promise<{ yPosition: number, currentPage: number }> => {
   if (!medicationsData || medicationsData.length === 0) {
     return { yPosition, currentPage };
@@ -31,7 +32,15 @@ export const addMedicationsSection = async (
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(11);
   
-  const medicationsTableData = medicationsData.map((entry: any) => [
+  // Filter medications if needed
+  let filteredMedications = medicationsData;
+  if (medicationFilter !== 'all') {
+    // If there are specific medications selected, filter by their IDs
+    const selectedIds = medicationFilter.split(',');
+    filteredMedications = medicationsData.filter(med => selectedIds.includes(med.id));
+  }
+  
+  const medicationsTableData = filteredMedications.map((entry: any) => [
     entry.name,
     entry.dosage,
     entry.frequency,
@@ -53,6 +62,10 @@ export const addMedicationsSection = async (
     alternateRowStyles: {
       fillColor: [240, 240, 255],
     },
+    styles: {
+      fontSize: 9,
+      cellPadding: 3
+    },
     columnStyles: {
       0: { cellWidth: 25 },
       6: { cellWidth: 30 }
@@ -62,17 +75,29 @@ export const addMedicationsSection = async (
   yPosition = (doc as any).lastAutoTable.finalY + 15;
   
   if (medicationHistoryData && medicationHistoryData.length > 0) {
+    // Filter medication history to match selected medications
+    let filteredHistory = medicationHistoryData;
+    if (medicationFilter !== 'all') {
+      const selectedIds = medicationFilter.split(',');
+      filteredHistory = medicationHistoryData.filter(entry => 
+        selectedIds.includes(entry.medication_id)
+      );
+    }
+    
+    // Limit history to last 30 entries for readability
+    filteredHistory = filteredHistory.slice(0, 30);
+    
     // Check for page break before medication history
-    const historyPageBreakResult = checkPageBreak(doc, currentPage, 150);
+    const historyPageBreakResult = checkPageBreak(doc, currentPage, 130);
     yPosition = historyPageBreakResult.newY;
     currentPage = historyPageBreakResult.currentPage;
     
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.text('Medication History', 14, yPosition);
+    doc.text('Medication History (Last 30 Entries)', 14, yPosition);
     yPosition += 10;
     
-    const medicationHistoryTableData = medicationHistoryData.map((entry: any) => {
+    const medicationHistoryTableData = filteredHistory.map((entry: any) => {
       const medicationName = entry.medications?.name || 'Unknown';
       return [
         format(new Date(entry.taken_at), 'MMM d, yyyy h:mm a'),
@@ -92,7 +117,8 @@ export const addMedicationsSection = async (
         fontStyle: 'bold',
       },
       styles: {
-        fontSize: 9
+        fontSize: 8,
+        cellPadding: 2
       },
       alternateRowStyles: {
         fillColor: [245, 245, 255],
@@ -114,8 +140,8 @@ export const addMedicationsSection = async (
       
       try {
         const medicationAdherenceData = prepareMedicationAdherenceChartData(
-          medicationsData, 
-          medicationHistoryData
+          filteredMedications, 
+          filteredHistory
         );
         
         const chartImgData = await generateChartAsBase64(
@@ -125,7 +151,7 @@ export const addMedicationsSection = async (
           'Medication Adherence (%)'
         );
         
-        const pageWidth = doc.internal.pageSize.width;
+        const pageWidth = doc.internal.pageSize.getWidth();
         const imgWidth = 170;
         const imgHeight = 90;
         doc.addImage(chartImgData, 'PNG', (pageWidth - imgWidth) / 2, yPosition, imgWidth, imgHeight);

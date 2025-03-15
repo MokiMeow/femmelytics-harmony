@@ -42,6 +42,11 @@ export const generateReport = async (options: ExportOptions): Promise<Blob> => {
     options.includeSummary
   );
   
+  // Pass medication filter to the report
+  if (options.medicationFilter) {
+    reportData.medicationFilter = options.medicationFilter;
+  }
+  
   // Generate the PDF report
   const pdfBlob = await createPDFReport(reportData, options.includeCharts);
   return pdfBlob;

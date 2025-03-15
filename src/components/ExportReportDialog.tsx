@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle 
 } from '@/components/ui/dialog';
@@ -16,6 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { format, addDays } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { fetchActiveMedications, Medication } from '@/services/medicationService';
 
 interface ExportReportDialogProps {
   open: boolean;
@@ -31,6 +32,33 @@ const ExportReportDialog = ({ open, onOpenChange }: ExportReportDialogProps) => 
   const [dataTypes, setDataTypes] = useState<ExportDataType[]>(['all']);
   const [includeCharts, setIncludeCharts] = useState(true);
   const [includeSummary, setIncludeSummary] = useState(true);
+  const [medications, setMedications] = useState<Medication[]>([]);
+  const [selectedMedications, setSelectedMedications] = useState<string[]>(['all']);
+  const [loadingMedications, setLoadingMedications] = useState(false);
+  
+  // Fetch available medications when dialog opens
+  useEffect(() => {
+    if (open && (dataTypes.includes('all') || dataTypes.includes('medications'))) {
+      const loadMedications = async () => {
+        setLoadingMedications(true);
+        try {
+          const medicationData = await fetchActiveMedications();
+          setMedications(medicationData);
+        } catch (error) {
+          console.error('Error fetching medications:', error);
+          toast({
+            title: "Error fetching medications",
+            description: "Unable to load your medications. Please try again.",
+            variant: "destructive"
+          });
+        } finally {
+          setLoadingMedications(false);
+        }
+      };
+      
+      loadMedications();
+    }
+  }, [open, dataTypes, toast]);
   
   const handlePeriodChange = (value: string) => {
     const newPeriod = value as ExportPeriod;
@@ -52,13 +80,19 @@ const ExportReportDialog = ({ open, onOpenChange }: ExportReportDialogProps) => 
   const handleExport = async () => {
     setLoading(true);
     try {
+      // Prepare medication filter
+      const medicationFilter = selectedMedications.includes('all') 
+        ? 'all' 
+        : selectedMedications.join(',');
+      
       const pdfBlob = await generateReport({
         dataTypes,
         period,
         startDate,
         endDate,
         includeCharts,
-        includeSummary
+        includeSummary,
+        medicationFilter
       });
       
       // Create download link
@@ -108,6 +142,27 @@ const ExportReportDialog = ({ open, onOpenChange }: ExportReportDialogProps) => 
     }
   };
   
+  // Handler for medication selection
+  const handleMedicationChange = (medId: string, checked: boolean) => {
+    if (medId === 'all' && checked) {
+      setSelectedMedications(['all']);
+      return;
+    }
+    
+    if (checked) {
+      if (selectedMedications.includes('all')) {
+        setSelectedMedications([medId]);
+      } else {
+        setSelectedMedications([...selectedMedications, medId]);
+      }
+    } else {
+      setSelectedMedications(selectedMedications.filter(id => id !== medId));
+    }
+  };
+  
+  // Check if medications section should be shown
+  const showMedicationsSection = dataTypes.includes('all') || dataTypes.includes('medications');
+  
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[550px]">
@@ -119,8 +174,9 @@ const ExportReportDialog = ({ open, onOpenChange }: ExportReportDialogProps) => 
         </DialogHeader>
         
         <Tabs defaultValue="data" className="w-full mt-4">
-          <TabsList className="grid grid-cols-2 w-full">
+          <TabsList className="grid grid-cols-3 w-full">
             <TabsTrigger value="data">Data Selection</TabsTrigger>
+            <TabsTrigger value="medications" disabled={!showMedicationsSection}>Medications</TabsTrigger>
             <TabsTrigger value="options">Report Options</TabsTrigger>
           </TabsList>
           
@@ -272,6 +328,71 @@ const ExportReportDialog = ({ open, onOpenChange }: ExportReportDialogProps) => 
                 </div>
               </div>
             </div>
+          </TabsContent>
+          
+          <TabsContent value="medications" className="space-y-4 mt-4">
+            {showMedicationsSection ? (
+              <>
+                <h3 className="text-sm font-medium mb-2">Select Medications to Include</h3>
+                {loadingMedications ? (
+                  <div className="flex items-center justify-center p-4">
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                    <span className="ml-2">Loading medications...</span>
+                  </div>
+                ) : medications.length > 0 ? (
+                  <div className="space-y-3 pl-1 max-h-[300px] overflow-y-auto pr-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="all-meds" 
+                        checked={selectedMedications.includes('all')} 
+                        onCheckedChange={(checked) => handleMedicationChange('all', !!checked)} 
+                      />
+                      <Label htmlFor="all-meds" className="font-medium">All medications</Label>
+                    </div>
+                    
+                    {medications.map(med => (
+                      <div key={med.id} className="flex items-center space-x-2">
+                        <Checkbox 
+                          id={`med-${med.id}`} 
+                          checked={selectedMedications.includes(med.id || '') || selectedMedications.includes('all')} 
+                          onCheckedChange={(checked) => handleMedicationChange(med.id || '', !!checked)} 
+                          disabled={selectedMedications.includes('all')}
+                        />
+                        <Label 
+                          htmlFor={`med-${med.id}`} 
+                          className={cn(
+                            selectedMedications.includes('all') ? "text-muted-foreground" : "",
+                            "flex-1"
+                          )}
+                        >
+                          <span className="font-medium">{med.name}</span>
+                          <span className="ml-2 text-sm text-muted-foreground">
+                            {med.dosage}, {med.frequency}
+                          </span>
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-4 text-center bg-muted/50 rounded-md">
+                    No medications found. Add medications in the Medications section to include them in reports.
+                  </div>
+                )}
+                
+                <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-900/20">
+                  <AlertDescription className="text-blue-800 dark:text-blue-300">
+                    <p className="text-sm">
+                      For better readability, consider selecting a few specific medications for your report.
+                      Including many medications may result in crowded charts and tables.
+                    </p>
+                  </AlertDescription>
+                </Alert>
+              </>
+            ) : (
+              <div className="p-6 text-center bg-muted rounded-md">
+                <p>Please select "Medications" or "All data" in the Data Selection tab to configure medication options.</p>
+              </div>
+            )}
           </TabsContent>
           
           <TabsContent value="options" className="space-y-6 mt-4">

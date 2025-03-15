@@ -3,8 +3,8 @@ import jsPDF from 'jspdf';
 import { format } from 'date-fns';
 
 export const addHeaderFooter = (doc: jsPDF, pageNumber: number) => {
-  const pageWidth = doc.internal.pageSize.width;
-  const pageHeight = doc.internal.pageSize.height;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
   
   // Header
   doc.setFillColor(102, 51, 153); // Purple color for header
@@ -34,14 +34,14 @@ export const checkPageBreak = (
   currentPage: number, 
   requiredSpace: number
 ): { newY: number, currentPage: number } => {
-  const pageHeight = doc.internal.pageSize.height;
+  const pageHeight = doc.internal.pageSize.getHeight();
   const safeBottomMargin = 25;
   
   // Calculate current Y position
   let currentY = 25; // Default starting position
   
   // Try to get the Y position from the last auto table if available
-  if ((doc as any).lastAutoTable && (doc as any).lastAutoTable.finalY) {
+  if ((doc as any).lastAutoTable && typeof (doc as any).lastAutoTable.finalY === 'number') {
     currentY = (doc as any).lastAutoTable.finalY;
   }
   

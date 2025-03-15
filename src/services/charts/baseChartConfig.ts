@@ -11,14 +11,14 @@ export const getCommonChartConfig = () => ({
   animation: false as const, // Explicitly set as const to match expected type
   layout: {
     padding: {
-      top: 5,
-      right: 20,
-      bottom: 20,
-      left: 20
+      top: 10,
+      right: 25,
+      bottom: 25,
+      left: 25
     }
   },
   font: {
-    size: 11 // Smaller base font size
+    size: 9 // Smaller base font size
   }
 });
 
@@ -26,8 +26,8 @@ export const getCommonChartConfig = () => ({
 export const createNoDataCanvas = (
   canvasId: string, 
   title: string, 
-  width = 600, // Smaller default width
-  height = 350 // Smaller default height
+  width = 500, // Smaller default width
+  height = 280 // Smaller default height
 ): HTMLCanvasElement => {
   const canvas = document.createElement('canvas');
   canvas.id = canvasId;
@@ -36,32 +36,32 @@ export const createNoDataCanvas = (
   
   const ctx = canvas.getContext('2d');
   if (ctx) {
-    ctx.fillStyle = '#f5f5f5';
+    ctx.fillStyle = '#f9f9f9';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    ctx.font = 'bold 20px Arial';
+    ctx.font = 'bold 16px Arial';
     ctx.fillStyle = '#666666';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(title, canvas.width / 2, 40);
+    ctx.fillText(title, canvas.width / 2, 30);
     
-    ctx.font = '16px Arial';
-    ctx.fillText('Not sufficient data to create this chart', canvas.width / 2, canvas.height / 2);
+    ctx.font = '14px Arial';
+    ctx.fillText('No data available for this chart', canvas.width / 2, canvas.height / 2);
   }
   
   return canvas;
 };
 
-// Fixed color palette for consistent chart colors
+// Fixed color palette for consistent chart colors - more distinct colors
 export const colorPalette = [
-  'rgba(255, 99, 132, 0.8)',
-  'rgba(54, 162, 235, 0.8)',
-  'rgba(255, 206, 86, 0.8)',
-  'rgba(75, 192, 192, 0.8)',
-  'rgba(153, 102, 255, 0.8)',
-  'rgba(255, 159, 64, 0.8)',
-  'rgba(199, 199, 199, 0.8)',
-  'rgba(83, 102, 255, 0.8)',
-  'rgba(40, 167, 69, 0.8)',
-  'rgba(220, 53, 69, 0.8)',
+  'rgba(255, 99, 132, 0.8)',   // pink
+  'rgba(54, 162, 235, 0.8)',   // blue
+  'rgba(255, 206, 86, 0.8)',   // yellow
+  'rgba(75, 192, 192, 0.8)',   // teal
+  'rgba(153, 102, 255, 0.8)',  // purple
+  'rgba(255, 159, 64, 0.8)',   // orange
+  'rgba(76, 175, 80, 0.8)',    // green
+  'rgba(244, 67, 54, 0.8)',    // red
+  'rgba(156, 39, 176, 0.8)',   // deep purple
+  'rgba(0, 188, 212, 0.8)',    // cyan
 ];

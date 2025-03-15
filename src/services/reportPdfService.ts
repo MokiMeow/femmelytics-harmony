@@ -30,8 +30,25 @@ export const createPDFReport = async (reportData: any, includeCharts: boolean): 
   
   let yPosition = 25;
   
+  // Track if we need to add a page break
+  const needsPageBreak = (requiredSpace: number): boolean => {
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const currentY = (doc as any).lastAutoTable?.finalY || yPosition;
+    return currentY + requiredSpace > pageHeight - 25;
+  };
+  
+  // Function to add a new page
+  const addNewPage = (): void => {
+    doc.addPage();
+    currentPage++;
+    addHeaderFooter(doc, currentPage);
+    yPosition = 25;
+  };
+  
   // Add cycle data section if available
   if (reportData.cycleData && reportData.cycleData.length > 0) {
+    if (needsPageBreak(40)) addNewPage();
+    
     const result = await addCycleSection(doc, reportData.cycleData, includeCharts, yPosition, currentPage);
     yPosition = result.yPosition;
     currentPage = result.currentPage;
@@ -39,6 +56,8 @@ export const createPDFReport = async (reportData: any, includeCharts: boolean): 
   
   // Add symptoms data section if available
   if (reportData.symptomsData && reportData.symptomsData.length > 0) {
+    if (needsPageBreak(40)) addNewPage();
+    
     const result = await addSymptomsSection(doc, reportData.symptomsData, includeCharts, yPosition, currentPage);
     yPosition = result.yPosition;
     currentPage = result.currentPage;
@@ -46,6 +65,8 @@ export const createPDFReport = async (reportData: any, includeCharts: boolean): 
   
   // Add mood data section if available
   if (reportData.moodData && reportData.moodData.length > 0) {
+    if (needsPageBreak(40)) addNewPage();
+    
     const result = await addMoodSection(doc, reportData.moodData, includeCharts, yPosition, currentPage);
     yPosition = result.yPosition;
     currentPage = result.currentPage;
@@ -53,13 +74,16 @@ export const createPDFReport = async (reportData: any, includeCharts: boolean): 
   
   // Add medications data section if available
   if (reportData.medicationsData && reportData.medicationsData.length > 0) {
+    if (needsPageBreak(40)) addNewPage();
+    
     const result = await addMedicationsSection(
       doc,
       reportData.medicationsData,
       reportData.medicationHistoryData || [],
       includeCharts,
       yPosition,
-      currentPage
+      currentPage,
+      reportData.medicationFilter || 'all'
     );
     yPosition = result.yPosition;
     currentPage = result.currentPage;
@@ -67,6 +91,8 @@ export const createPDFReport = async (reportData: any, includeCharts: boolean): 
   
   // Add AI-generated summary if available
   if (reportData.summary) {
+    if (needsPageBreak(40)) addNewPage();
+    
     const result = addSummarySection(doc, reportData.summary, yPosition, currentPage);
     yPosition = result.yPosition;
     currentPage = result.currentPage;
