@@ -1,309 +1,293 @@
-
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { User, Mail, Calendar, ArrowLeft, Save, LogOut, Shield, UserCheck, Clock, Settings } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
-import Navigation from '@/components/Navigation';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { 
+  User, Bell, Lock, HelpCircle, Shield, LogOut, 
+  Smartphone, Calendar, RefreshCcw
+} from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import Navigation from '@/components/Navigation';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
-
-interface ProfileData {
-  first_name: string | null;
-  last_name: string | null;
-}
+import GoogleCalendarIntegration from '@/components/GoogleCalendarIntegration';
 
 const Profile = () => {
-  const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
-  const [profileData, setProfileData] = useState<ProfileData>({
-    first_name: '',
-    last_name: '',
-  });
-
-  // Redirect if not logged in
-  useEffect(() => {
-    if (!user) {
-      navigate('/auth');
-    }
-  }, [user, navigate]);
-
-  // Fetch profile data
-  useEffect(() => {
-    const fetchProfile = async () => {
-      if (!user) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('first_name, last_name')
-          .eq('id', user.id)
-          .single();
-        
-        if (error) {
-          console.error('Error fetching profile:', error);
-          return;
-        }
-        
-        if (data) {
-          setProfileData({
-            first_name: data.first_name,
-            last_name: data.last_name,
-          });
-        }
-      } catch (error) {
-        console.error('Error:', error);
-      }
-    };
-    
-    fetchProfile();
-  }, [user]);
-
-  const handleSaveProfile = async () => {
-    if (!user) return;
-    
-    setIsLoading(true);
+  const [activeTab, setActiveTab] = useState('account');
+  const [calendarConnected, setCalendarConnected] = useState(false);
+  
+  const handleSignOut = async () => {
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          first_name: profileData.first_name,
-          last_name: profileData.last_name,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', user.id);
-      
-      if (error) {
-        toast({
-          title: "Error saving profile",
-          description: error.message,
-          variant: "destructive",
-        });
-        return;
-      }
-      
+      await signOut();
       toast({
-        title: "Profile updated",
-        description: "Your profile has been successfully updated.",
+        title: "Signed out",
+        description: "You have been successfully signed out.",
       });
     } catch (error) {
-      console.error('Error updating profile:', error);
+      console.error("Sign out error:", error);
       toast({
-        title: "Error saving profile",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
+        title: "Error signing out",
+        description: "Could not sign you out. Please try again later.",
+        variant: "destructive"
       });
-    } finally {
-      setIsLoading(false);
     }
   };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setProfileData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  if (!user) {
-    return null; // No need to render anything if redirecting
-  }
-
+  
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
       
-      <div className="pt-24 pb-16 px-4 md:px-6 max-w-5xl mx-auto">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-8 flex items-center"
-        >
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate(-1)}
-            className="mr-2"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-3xl font-semibold">Your Profile</h1>
-        </motion.div>
+      <div className="pt-24 pb-16 px-4 md:px-6 max-w-7xl mx-auto">
+        <h1 className="text-3xl font-semibold mb-8">Profile Settings</h1>
         
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          <div className="md:col-span-1">
-            <Card className="bg-gradient-to-b from-lavender-50 to-background">
-              <CardContent className="pt-6 flex flex-col items-center">
-                <Avatar className="h-24 w-24 border-4 border-white shadow-lg">
-                  <AvatarImage src={user.user_metadata?.avatar_url || ''} alt="Profile" />
-                  <AvatarFallback className="bg-lavender-100 text-lavender-600 text-xl">
-                    {profileData.first_name?.[0] || user.email?.[0]?.toUpperCase() || 'U'}
-                  </AvatarFallback>
-                </Avatar>
-                <h2 className="mt-4 text-xl font-semibold text-center">
-                  {profileData.first_name && profileData.last_name 
-                    ? `${profileData.first_name} ${profileData.last_name}`
-                    : user.email?.split('@')[0] || 'User'}
-                </h2>
-                <p className="text-sm text-muted-foreground text-center mt-1">{user.email}</p>
-                
-                <Separator className="my-6" />
-                
-                <div className="w-full space-y-4">
-                  <div className="flex items-center p-2 rounded-md hover:bg-muted cursor-pointer">
-                    <Shield className="h-4 w-4 mr-3 text-lavender-500" />
-                    <span className="text-sm">Security</span>
-                  </div>
-                  <div className="flex items-center p-2 rounded-md hover:bg-muted cursor-pointer">
-                    <Settings className="h-4 w-4 mr-3 text-lavender-500" />
-                    <span className="text-sm">Preferences</span>
-                  </div>
-                  <div className="flex items-center p-2 rounded-md hover:bg-muted cursor-pointer">
-                    <UserCheck className="h-4 w-4 mr-3 text-lavender-500" />
-                    <span className="text-sm">Account</span>
-                  </div>
-                </div>
-                
-                <Button
-                  variant="destructive"
-                  onClick={signOut}
-                  className="mt-6 w-full"
-                >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Sign Out
-                </Button>
-              </CardContent>
-            </Card>
+        <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-8">
+          <div className="space-y-6">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 rounded-full bg-lavender-500 flex items-center justify-center text-white">
+                <User className="h-6 w-6" />
+              </div>
+              <div>
+                <h2 className="font-medium">{user?.email}</h2>
+                <p className="text-sm text-muted-foreground">Free Account</p>
+              </div>
+            </div>
+            
+            <nav className="space-y-1">
+              <Button 
+                variant={activeTab === 'account' ? "secondary" : "ghost"} 
+                className="w-full justify-start"
+                onClick={() => setActiveTab('account')}
+              >
+                <User className="mr-2 h-4 w-4" />
+                Account
+              </Button>
+              <Button 
+                variant={activeTab === 'notifications' ? "secondary" : "ghost"} 
+                className="w-full justify-start"
+                onClick={() => setActiveTab('notifications')}
+              >
+                <Bell className="mr-2 h-4 w-4" />
+                Notifications
+              </Button>
+              <Button 
+                variant={activeTab === 'privacy' ? "secondary" : "ghost"} 
+                className="w-full justify-start"
+                onClick={() => setActiveTab('privacy')}
+              >
+                <Shield className="mr-2 h-4 w-4" />
+                Privacy & Data
+              </Button>
+              <Button 
+                variant={activeTab === 'integrations' ? "secondary" : "ghost"} 
+                className="w-full justify-start"
+                onClick={() => setActiveTab('integrations')}
+              >
+                <Calendar className="mr-2 h-4 w-4" />
+                Integrations
+              </Button>
+              <Button 
+                variant={activeTab === 'help' ? "secondary" : "ghost"} 
+                className="w-full justify-start"
+                onClick={() => setActiveTab('help')}
+              >
+                <HelpCircle className="mr-2 h-4 w-4" />
+                Help & Support
+              </Button>
+            </nav>
+            
+            <div className="pt-4">
+              <Button variant="outline" className="w-full justify-start text-red-500" onClick={handleSignOut}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign out
+              </Button>
+            </div>
           </div>
           
-          <div className="md:col-span-3">
-            <Tabs defaultValue="personal" className="w-full">
-              <TabsList className="mb-6">
-                <TabsTrigger value="personal">Personal Info</TabsTrigger>
-                <TabsTrigger value="activity">Activity</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="personal">
+          <div>
+            {activeTab === 'account' && (
+              <div className="space-y-8">
                 <Card>
-                  <CardHeader className="pb-4">
-                    <CardTitle className="flex items-center">
-                      <User className="h-5 w-5 mr-2 text-lavender-500" />
-                      Personal Information
-                    </CardTitle>
+                  <CardHeader>
+                    <CardTitle>Account Information</CardTitle>
+                    <CardDescription>Manage your account details</CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="first_name">First Name</Label>
-                        <Input
-                          id="first_name"
-                          name="first_name"
-                          value={profileData.first_name || ''}
-                          onChange={handleInputChange}
-                          placeholder="Your first name"
-                          className="bg-muted/50 focus:bg-background transition-colors"
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="last_name">Last Name</Label>
-                        <Input
-                          id="last_name"
-                          name="last_name"
-                          value={profileData.last_name || ''}
-                          onChange={handleInputChange}
-                          placeholder="Your last name"
-                          className="bg-muted/50 focus:bg-background transition-colors"
-                        />
-                      </div>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-medium">Email</h3>
+                      <p className="text-muted-foreground">{user?.email}</p>
                     </div>
-                    
-                    <Separator />
                     
                     <div className="space-y-2">
-                      <Label>Email Address</Label>
-                      <div className="flex items-center p-3 bg-muted/50 rounded-md">
-                        <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <span>{user?.email}</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Your email address is used for login and cannot be changed here.
+                      <h3 className="text-sm font-medium">Password</h3>
+                      <Button variant="outline" disabled>
+                        Change Password
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Subscription</CardTitle>
+                    <CardDescription>Manage your subscription plan</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      You are currently on the Free plan.
+                    </p>
+                    <Button disabled>Upgrade to Premium</Button>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+            
+            {activeTab === 'notifications' && (
+              <div className="space-y-8">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Notification Preferences</CardTitle>
+                    <CardDescription>Manage your notification settings</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-medium">Email Notifications</h3>
+                      <p className="text-muted-foreground">
+                        Receive important updates and announcements via email.
                       </p>
+                      <Button disabled>Enable Email Notifications</Button>
                     </div>
                     
-                    <div className="flex items-center gap-3 p-3 bg-lavender-50 rounded-md border border-lavender-200">
-                      <div className="p-2 bg-lavender-100 rounded-full">
-                        <Calendar className="h-4 w-4 text-lavender-600" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-medium">Account Created</div>
-                        <div className="text-sm text-muted-foreground">
-                          {user?.created_at ? format(new Date(user.created_at), 'PPP') : 'N/A'}
-                        </div>
-                      </div>
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-medium">Push Notifications</h3>
+                      <p className="text-muted-foreground">
+                        Get real-time updates on your mobile device.
+                      </p>
+                      <Button disabled>Enable Push Notifications</Button>
                     </div>
                   </CardContent>
-                  <CardFooter className="border-t pt-6">
-                    <Button
-                      onClick={handleSaveProfile}
-                      className="bg-lavender-500 hover:bg-lavender-600"
-                      disabled={isLoading}
-                    >
-                      {isLoading ? (
-                        <div className="flex items-center">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          <span>Saving...</span>
-                        </div>
-                      ) : (
-                        <>
-                          <Save className="h-4 w-4 mr-2" />
-                          Save Changes
-                        </>
-                      )}
-                    </Button>
-                  </CardFooter>
                 </Card>
-              </TabsContent>
-              
-              <TabsContent value="activity">
+              </div>
+            )}
+            
+            {activeTab === 'privacy' && (
+              <div className="space-y-8">
                 <Card>
-                  <CardHeader className="pb-4">
-                    <CardTitle className="flex items-center">
-                      <Clock className="h-5 w-5 mr-2 text-lavender-500" />
-                      Recent Activity
-                    </CardTitle>
+                  <CardHeader>
+                    <CardTitle>Privacy Settings</CardTitle>
+                    <CardDescription>Manage your privacy preferences</CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <div className="relative pl-6 border-l border-muted space-y-4">
-                      {[
-                        { action: "Profile updated", date: "Today", time: "10:30 AM" },
-                        { action: "Logged into account", date: "Today", time: "9:45 AM" },
-                        { action: "Added new cycle data", date: "Yesterday", time: "3:20 PM" },
-                        { action: "Updated mood information", date: "Last week", time: "2:15 PM" },
-                      ].map((item, index) => (
-                        <div key={index} className="relative pb-4">
-                          <div className="absolute -left-[29px] h-3 w-3 rounded-full bg-lavender-300 border-4 border-background"></div>
-                          <p className="font-medium">{item.action}</p>
-                          <p className="text-sm text-muted-foreground">{item.date} at {item.time}</p>
-                        </div>
-                      ))}
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-medium">Data Sharing</h3>
+                      <p className="text-muted-foreground">
+                        Control whether your data is shared with third parties.
+                      </p>
+                      <Button disabled>Disable Data Sharing</Button>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-medium">Account Deletion</h3>
+                      <p className="text-muted-foreground">
+                        Permanently delete your account and all associated data.
+                      </p>
+                      <Button variant="destructive" disabled>
+                        Delete Account
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
-              </TabsContent>
-            </Tabs>
+              </div>
+            )}
+            
+            {activeTab === 'integrations' && (
+              <div className="space-y-8">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>External Integrations</CardTitle>
+                    <CardDescription>
+                      Connect Luna with your favorite apps and services
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-8">
+                    <GoogleCalendarIntegration 
+                      isConnected={calendarConnected} 
+                      onStatusChange={setCalendarConnected} 
+                    />
+                    
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center">
+                          <Smartphone className="h-5 w-5 mr-2 text-teal-500" />
+                          Mobile App Sync
+                        </CardTitle>
+                        <CardDescription>
+                          Sync your data with our mobile app
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          The Luna mobile app is coming soon. Stay tuned for updates!
+                        </p>
+                        <Button disabled className="w-full sm:w-auto">
+                          Coming Soon
+                        </Button>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center">
+                          <RefreshCcw className="h-5 w-5 mr-2 text-coral-500" />
+                          Health App Integration
+                        </CardTitle>
+                        <CardDescription>
+                          Connect with health tracking platforms
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          Integration with Apple Health, Google Fit, and Fitbit coming soon.
+                        </p>
+                        <Button disabled className="w-full sm:w-auto">
+                          Coming Soon
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+            
+            {activeTab === 'help' && (
+              <div className="space-y-8">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Help & Support</CardTitle>
+                    <CardDescription>Get assistance and find answers to common questions</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-medium">FAQ</h3>
+                      <p className="text-muted-foreground">
+                        Find answers to frequently asked questions.
+                      </p>
+                      <Button variant="outline" disabled>
+                        Browse FAQ
+                      </Button>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-medium">Contact Support</h3>
+                      <p className="text-muted-foreground">
+                        Get in touch with our support team for personalized assistance.
+                      </p>
+                      <Button disabled>Contact Support</Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Calendar, Activity, Heart, BarChart3, LineChart as LucideLineChart, 
   TrendingUp, MoreHorizontal, Filter, Info, Droplet, Moon, Clock, 
-  AlertCircle, Star, Thermometer, MessageSquare, Loader2
+  AlertCircle, Star, Thermometer, MessageSquare, Loader2, FileText
 } from 'lucide-react';
 import Navigation from '@/components/Navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,8 +17,8 @@ import { fetchDashboardData } from '@/services/dashboardService';
 import { parseISO, format, addDays } from 'date-fns';
 import { useToast } from '@/components/ui/use-toast';
 import FeedbackDialog from '@/components/FeedbackDialog';
+import ExportReportDialog from '@/components/ExportReportDialog';
 
-// Helper function to format date ranges
 const formatDateRange = (days: number) => {
   const today = new Date();
   const pastDate = new Date();
@@ -30,10 +29,10 @@ const formatDateRange = (days: number) => {
 
 const Dashboard = () => {
   const [timeRange, setTimeRange] = useState('30');
+  const [showExportDialog, setShowExportDialog] = useState(false);
   const { toast } = useToast();
   const dateRange = formatDateRange(parseInt(timeRange));
   
-  // Fetch dashboard data
   const { data: dashboardData, isLoading, error } = useQuery({
     queryKey: ['dashboardData', timeRange],
     queryFn: () => fetchDashboardData(parseInt(timeRange)),
@@ -52,7 +51,6 @@ const Dashboard = () => {
     }
   }, [error, toast]);
   
-  // Calculate cycle day based on statistics
   const calculateCycleDay = () => {
     if (!dashboardData?.statistics?.last_cycle_start_date) {
       return { day: 'N/A', total: 28 };
@@ -68,11 +66,9 @@ const Dashboard = () => {
   
   const cycleDayInfo = calculateCycleDay();
   
-  // Generate insights based on the data
   const generateInsights = () => {
     const insights = [];
     
-    // Cycle prediction insight
     if (dashboardData?.statistics?.next_predicted_date) {
       const nextDate = parseISO(dashboardData.statistics.next_predicted_date);
       const today = new Date();
@@ -89,9 +85,7 @@ const Dashboard = () => {
       }
     }
     
-    // Symptom pattern insight
     if (dashboardData?.symptoms?.length > 5) {
-      // Group symptoms by day relative to period start
       const symptomPatterns: Record<string, number[]> = {};
       
       dashboardData.symptoms.forEach(symptom => {
@@ -107,7 +101,6 @@ const Dashboard = () => {
         }
       });
       
-      // Find the most common symptom before period
       const commonSymptoms = Object.entries(symptomPatterns)
         .filter(([_, days]) => days.some(day => day >= -3 && day <= 0))
         .sort((a, b) => b[1].length - a[1].length);
@@ -123,7 +116,6 @@ const Dashboard = () => {
       }
     }
     
-    // Mood trend insight
     if (dashboardData?.moodTrendData?.length >= 3) {
       const last3Months = dashboardData.moodTrendData.slice(-3);
       const lastMonth = last3Months[2].average;
@@ -140,7 +132,6 @@ const Dashboard = () => {
       }
     }
     
-    // If we need a default insight
     if (insights.length === 0) {
       insights.push({
         title: 'Track Consistently',
@@ -156,7 +147,6 @@ const Dashboard = () => {
   
   const insights = !isLoading && dashboardData ? generateInsights() : [];
   
-  // Get recent symptoms
   const getRecentSymptoms = () => {
     if (!dashboardData?.symptoms || dashboardData.symptoms.length === 0) {
       return [];
@@ -170,7 +160,6 @@ const Dashboard = () => {
       })
       .map(s => s.symptom_type);
     
-    // Get unique symptoms
     return [...new Set(last7DaysSymptoms)].slice(0, 3);
   };
   
@@ -204,6 +193,15 @@ const Dashboard = () => {
               </SelectContent>
             </Select>
             
+            <Button 
+              variant="outline" 
+              className="flex-shrink-0" 
+              onClick={() => setShowExportDialog(true)}
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Export Report
+            </Button>
+            
             <FeedbackDialog />
           </div>
         </div>
@@ -217,7 +215,6 @@ const Dashboard = () => {
           </div>
         ) : (
           <>
-            {/* Health Overview Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -382,7 +379,6 @@ const Dashboard = () => {
               </motion.div>
             </div>
             
-            {/* Insights Cards */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -413,7 +409,6 @@ const Dashboard = () => {
               </div>
             </motion.div>
             
-            {/* Main Charts Section */}
             <Tabs defaultValue="cycle" className="w-full">
               <TabsList className="grid grid-cols-3 max-w-md mb-6">
                 <TabsTrigger value="cycle">Cycle Analysis</TabsTrigger>
@@ -964,6 +959,11 @@ const Dashboard = () => {
           </>
         )}
       </div>
+      
+      <ExportReportDialog 
+        open={showExportDialog} 
+        onOpenChange={setShowExportDialog} 
+      />
     </div>
   );
 };
