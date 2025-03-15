@@ -60,7 +60,10 @@ export const generateChartAsBase64 = (canvasId: string, chartData: ChartData, ch
               title: {
                 display: true,
                 text: title,
-                font: { size: 12, weight: 'bold' }
+                font: { 
+                  size: 12, 
+                  weight: 'bold' as const
+                }
               },
               legend: {
                 display: true,
@@ -121,7 +124,10 @@ export const generateChartAsBase64 = (canvasId: string, chartData: ChartData, ch
               title: {
                 display: true,
                 text: title,
-                font: { size: 12, weight: 'bold' }
+                font: { 
+                  size: 12, 
+                  weight: 'bold' as const 
+                }
               },
               legend: {
                 display: true,
@@ -170,7 +176,10 @@ export const generateChartAsBase64 = (canvasId: string, chartData: ChartData, ch
               title: {
                 display: true,
                 text: title,
-                font: { size: 12, weight: 'bold' }
+                font: { 
+                  size: 12, 
+                  weight: 'bold' as const 
+                }
               },
               legend: {
                 display: chartData.datasets && chartData.datasets.length > 1,

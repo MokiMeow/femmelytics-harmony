@@ -84,6 +84,7 @@ export const addCycleSection = async (
       yPosition += imgHeight + 25;
     } catch (error) {
       console.error('Error generating cycle chart:', error);
+      const pageWidth = doc.internal.pageSize.width;
       doc.setTextColor(255, 0, 0);
       doc.setFontSize(10);
       doc.text('Chart generation failed. Please try again.', pageWidth / 2, yPosition + 20, { align: 'center' });

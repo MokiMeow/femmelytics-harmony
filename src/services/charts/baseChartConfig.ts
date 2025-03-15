@@ -20,7 +20,7 @@ export const getCommonChartConfig = () => ({
   font: {
     size: 10, // Slightly larger for better readability
     family: 'Arial',
-    weight: 'normal'
+    weight: 'normal' as const
   },
   plugins: {
     legend: {
@@ -39,7 +39,7 @@ export const getCommonChartConfig = () => ({
       display: true,
       font: {
         size: 14,
-        weight: 'bold'
+        weight: 'bold' as const
       },
       padding: {
         top: 10,

@@ -66,7 +66,7 @@ export const createPieChart = (
           text: title,
           font: {
             size: 18,
-            weight: 'bold'
+            weight: 'bold' as const
           },
           padding: {
             top: 10,

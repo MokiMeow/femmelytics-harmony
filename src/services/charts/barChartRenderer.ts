@@ -27,7 +27,7 @@ export const createBarChart = (
           text: title,
           font: {
             size: 18,
-            weight: 'bold'
+            weight: 'bold' as const
           },
           padding: {
             top: 10,
@@ -56,7 +56,7 @@ export const createBarChart = (
             text: chartData.yAxisLabel || 'Value',
             font: {
               size: 14,
-              weight: 'bold'
+              weight: 'bold' as const
             }
           },
           ticks: {
