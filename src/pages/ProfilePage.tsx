@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,11 @@ const ProfilePage = () => {
           
         if (error) {
           console.error('Error in profile fetch:', error);
+          // Don't return early on error, set default values instead
+          setFirstName("");
+          setLastName("");
+          setAvatarUrl(null);
+          setIsCalendarConnected(false);
           return;
         }
         
