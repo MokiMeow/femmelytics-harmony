@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
@@ -142,11 +143,18 @@ const AIAssistant = () => {
     
     setIsLoading(true);
     try {
+      // Limit text length to prevent TTS errors
+      const limitedText = text.length > 1000 ? text.substring(0, 1000) + "..." : text;
+      
       const { data, error } = await supabase.functions.invoke('ai-assistant/text-to-speech', {
-        body: { text, voice: 'nova' },
+        body: { text: limitedText, voice: 'nova' },
       });
       
       if (error) throw error;
+      
+      if (!data.audioContent) {
+        throw new Error("No audio content returned");
+      }
       
       const audioContent = data.audioContent;
       const audioBlob = new Blob(
@@ -160,7 +168,7 @@ const AIAssistant = () => {
       console.error('Error with text-to-speech:', error);
       toast({
         title: "Error",
-        description: "Failed to generate speech. Please try again.",
+        description: "Failed to generate speech. The message might be too long.",
         variant: "destructive",
       });
     } finally {
@@ -204,8 +212,13 @@ const AIAssistant = () => {
                     className="mt-2 h-6 w-6 p-0 rounded-full"
                     onClick={() => speakMessage(message.content)}
                     title={isSpeaking ? "Stop speaking" : "Speak this message"}
+                    disabled={isLoading}
                   >
-                    <VolumeIcon className="h-3 w-3" />
+                    {isLoading ? (
+                      <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    ) : (
+                      <VolumeIcon className="h-3 w-3" />
+                    )}
                     <span className="sr-only">
                       {isSpeaking ? "Stop speaking" : "Speak message"}
                     </span>

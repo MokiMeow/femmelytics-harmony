@@ -109,6 +109,7 @@ async function handleChatRequest(req: Request) {
   ${context}
   
   Provide empathetic, evidence-based advice for women's health questions.
+  Keep responses concise and under 1000 characters when possible to ensure they can be spoken out loud effectively.
   If asked to recommend books, suggest relevant titles about women's health, menstrual cycle health, hormonal balance, and female wellness.
   If asked to recommend videos, suggest watching content on topics like cycle syncing, period nutrition, hormonal health exercises, or stress reduction.
   If asked about period products, provide information about various options, their benefits, and considerations.
@@ -117,7 +118,7 @@ async function handleChatRequest(req: Request) {
   Do NOT respond to questions unrelated to women's health, wellbeing, or the menstrual cycle.
   Do NOT provide medical diagnosis or claim to replace professional medical advice.
   
-  Keep responses concise, supportive, and practical.`;
+  Keep responses supportive and practical.`;
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -152,16 +153,20 @@ async function handleChatRequest(req: Request) {
 }
 
 async function handleTextToSpeechRequest(req: Request) {
-  const { text, voice = 'nova' }: TextToSpeechRequest = await req.json();
-
-  if (!text) {
-    return new Response(
-      JSON.stringify({ error: 'Text is required' }),
-      { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-    );
-  }
-
   try {
+    const { text, voice = 'nova' }: TextToSpeechRequest = await req.json();
+
+    if (!text) {
+      return new Response(
+        JSON.stringify({ error: 'Text is required' }),
+        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
+
+    // Limit text length to prevent TTS errors
+    const limitedText = text.length > 1000 ? text.substring(0, 1000) + "..." : text;
+    console.log(`Processing TTS request with ${limitedText.length} characters`);
+
     const response = await fetch('https://api.openai.com/v1/audio/speech', {
       method: 'POST',
       headers: {
@@ -170,7 +175,7 @@ async function handleTextToSpeechRequest(req: Request) {
       },
       body: JSON.stringify({
         model: 'tts-1',
-        input: text.slice(0, 4096), // Limit to 4096 characters
+        input: limitedText,
         voice: voice,
         response_format: 'mp3',
       }),
@@ -178,6 +183,7 @@ async function handleTextToSpeechRequest(req: Request) {
 
     if (!response.ok) {
       const errorData = await response.json();
+      console.error('TTS API error:', errorData);
       throw new Error(errorData.error?.message || 'Text-to-speech request failed');
     }
 

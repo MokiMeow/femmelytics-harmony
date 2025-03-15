@@ -10,9 +10,9 @@ const About = () => {
       <Navigation />
       
       <div className="container px-4 py-16 mx-auto max-w-6xl">
-        <div className="flex items-center mb-10">
-          <Link to="/" className="flex items-center text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft className="h-4 w-4 mr-2" />
+        <div className="flex items-center mb-10 mt-16">
+          <Link to="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors px-4 py-2 rounded-md hover:bg-muted">
+            <ArrowLeft className="h-4 w-4" />
             <span>Back to Home</span>
           </Link>
         </div>
