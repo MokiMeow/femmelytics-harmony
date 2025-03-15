@@ -4,8 +4,8 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 
-// Generate a unique build ID for this build
-const buildId = new Date().getTime().toString();
+// Use a static build ID instead of generating a new one each time
+const buildId = "20230512"; // Static version identifier
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({

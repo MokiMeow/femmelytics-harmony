@@ -13,17 +13,18 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// Add version timestamp to force reload of resources
-const BUILD_TIMESTAMP = new Date().getTime();
+// Add version timestamp for resources - use a static value instead of current time
+const BUILD_TIMESTAMP = "20230512"; // Static version identifier
 // Set a cache busting value in localStorage to detect changes
 const CACHE_KEY = 'femmelytics-cache-version';
 const lastVersion = localStorage.getItem(CACHE_KEY);
-const currentVersion = BUILD_TIMESTAMP.toString();
+const currentVersion = BUILD_TIMESTAMP;
 
-// Check if the version has changed and reload if needed
-if (lastVersion && lastVersion !== currentVersion) {
+// Check if the version has changed and reload if needed - but only once
+if (lastVersion && lastVersion !== currentVersion && !sessionStorage.getItem('reloaded')) {
   localStorage.setItem(CACHE_KEY, currentVersion);
-  window.location.reload(); // Remove the 'true' argument here
+  sessionStorage.setItem('reloaded', 'true');
+  window.location.reload();
 } else {
   localStorage.setItem(CACHE_KEY, currentVersion);
 }
