@@ -2,7 +2,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
-import { componentTagger } from "lovable-tagger";
 
 // Use a static build ID instead of generating a new one each time
 const buildId = "20230512"; // Static version identifier
@@ -15,9 +14,7 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    mode === 'development' &&
-    componentTagger(),
-  ].filter(Boolean),
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
