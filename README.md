@@ -40,6 +40,13 @@ To build the project for production:
 ```sh
 npm run build
 ```
+The built files will be in the `dist` directory, which can be deployed to your hosting platform of choice.
+
+## Demo Video
+
+Watch the live demo of **Feminalytics Health Tracking** in action! 🚀
+
+https://github.com/user-attachments/assets/9bf0ae54-adf8-4ed8-8c97-f8e25d5dc7e8
 
 The built files will be in the `dist` directory, which can be deployed to your hosting platform of choice.
 
