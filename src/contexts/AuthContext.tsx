@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
@@ -20,30 +19,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Helper to fetch the latest session
   const fetchSession = async () => {
     const { data, error } = await supabase.auth.getSession();
     if (error) {
       console.error('Error fetching session:', error);
-      return;
+      return null;
     }
     const sessionUser = data?.session?.user || null;
     setUser(sessionUser);
+    return sessionUser;
   };
 
   useEffect(() => {
-    // Initial session fetch
     (async () => {
       setLoading(true);
       await fetchSession();
       setLoading(false);
     })();
 
-    // Listen for auth state changes
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       console.log("Auth state changed:", event);
       if (event === 'SIGNED_IN') {
-        // Update user state immediately from listener
         const sessionUser = session?.user || null;
         setUser(sessionUser);
         if (sessionUser) {
@@ -81,21 +77,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       throw error;
     }
-    // Note: If your sign up flow requires email confirmation, the session might not be active immediately.
     return data;
   };
 
   const signIn = async (email: string, password: string) => {
-    // If a different user is already signed in, sign them out first.
     if (user && user.email !== email) {
       await supabase.auth.signOut();
-      // Optionally, wait a short moment before proceeding
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       toast({
         title: "Sign in failed",
@@ -105,13 +96,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw error;
     }
 
-    // Manually update user state from the response
     if (data.user) {
       setUser(data.user);
     } else if (data.session && data.session.user) {
       setUser(data.session.user);
     } else {
-      // If for some reason the response doesn't include user data, re-fetch the session
       await fetchSession();
     }
     return data;
@@ -122,7 +111,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       provider: 'google',
       options: {
         redirectTo: window.location.origin + '/dashboard',
-      }
+      },
     });
     
     if (error) {
@@ -145,7 +134,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       throw error;
     }
-    // Directly clear the user state.
     setUser(null);
   };
 
