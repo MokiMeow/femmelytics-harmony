@@ -49,4 +49,4 @@ The built files will be in the `dist` directory, which can be deployed to your h
 
 ## License
 This project is open-source and licensed under the MIT License.
-See the [LICENSE](LICENSE)file for more details. 
+See the [LICENSE](LICENSE) file for more details. 
