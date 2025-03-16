@@ -1,13 +1,12 @@
-
 # Feminalytics Health Tracking
 
-## Project info
+A **comprehensive health tracking application** designed to help women monitor and analyze their health with ease.
 
-A comprehensive health tracking application designed for women's health monitoring and analysis.
+---
 
-## How to run this project
+## How to Run This Project  
 
-Follow these steps to get the project running locally:
+Follow these steps to set up the project locally:  
 
 ```sh
 # Step 1: Clone the repository using the project's Git URL.
@@ -17,21 +16,20 @@ git clone <YOUR_GIT_URL>
 cd <YOUR_PROJECT_NAME>
 
 # Step 3: Install the necessary dependencies.
-npm i
+npm install
 
 # Step 4: Start the development server with auto-reloading and an instant preview.
 npm run dev
 ```
 
-## Technologies used in this project
-
+## Technologies Used
 This project is built with:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS.
+Vite – Fast development environment
+TypeScript – Strongly typed JavaScript
+React – Component-based UI framework
+shadcn-ui – Modern, accessible UI components
+Tailwind CSS – Utility-first styling framework
 
 ## Deployment
 
@@ -44,3 +42,11 @@ npm run build
 ```
 
 The built files will be in the `dist` directory, which can be deployed to your hosting platform of choice.
+
+
+## Author
+- [smohith](https://github.com/MokiMeow)
+
+## License
+This project is open-source and licensed under the MIT License.
+See the [LICENSE](LICENSE)file for more details. 
