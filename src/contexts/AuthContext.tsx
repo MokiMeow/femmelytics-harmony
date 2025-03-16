@@ -41,6 +41,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Listen for auth state changes
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state changed:", event);
       if (event === 'SIGNED_IN') {
         // Update user state immediately from listener
         const sessionUser = session?.user || null;
@@ -91,13 +92,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Optionally, wait a short moment before proceeding
     }
 
-    // For development purposes, override credentials if needed:
-    const actualEmail = email === 'mack@gmail.com' ? 'mack@gmail.com' : email;
-    const actualPassword = email === 'mack@gmail.com' ? 'mohithtony' : password;
-
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: actualEmail,
-      password: actualPassword,
+      email,
+      password,
     });
     if (error) {
       toast({
