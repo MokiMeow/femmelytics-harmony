@@ -10,10 +10,10 @@ Follow these steps to set up the project locally:
 
 ```sh
 # Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+git clone <GIT_URL>
 
 # Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+cd <PROJECT_NAME>
 
 # Step 3: Install the necessary dependencies.
 npm install
