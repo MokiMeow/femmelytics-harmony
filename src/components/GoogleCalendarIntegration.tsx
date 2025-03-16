@@ -13,7 +13,7 @@ interface GoogleCalendarIntegrationProps {
   onStatusChange?: (connected: boolean) => void;
 }
 
-const GOOGLE_API_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID"; // This would come from environment variables in a real app
+const GOOGLE_API_CLIENT_ID = "592305081650-t94fiql1qnikep88dmap2b5s5bti1ojr.apps.googleusercontent.com"; // This would come from environment variables in a real app
 const GOOGLE_API_SCOPES = "https://www.googleapis.com/auth/calendar.events";
 
 const GoogleCalendarIntegration = ({ isConnected, onStatusChange }: GoogleCalendarIntegrationProps) => {
