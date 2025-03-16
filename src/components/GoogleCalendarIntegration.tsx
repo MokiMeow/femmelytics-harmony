@@ -1,135 +1,113 @@
+import React, { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertCircle, Calendar, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { createClient } from "@supabase/supabase-js";
 
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, Calendar, Loader2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { syncWithGoogleCalendar } from '@/services/calendarService';
-import { cn } from '@/lib/utils';
+// ✅ Use your Supabase project details
+const SUPABASE_URL = "https://rdtwkqwbdkyznbmdhajl.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkdHdrcXdiZGt5em5ibWRoYWpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIwNDc5OTAsImV4cCI6MjA1NzYyMzk5MH0.23dQ-IEcw_c6MAw2Vym8PkKIrvAHbKvj-3zxmQ12wp4";
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 interface GoogleCalendarIntegrationProps {
   isConnected: boolean;
   onStatusChange?: (connected: boolean) => void;
 }
 
-const GOOGLE_API_CLIENT_ID = "592305081650-t94fiql1qnikep88dmap2b5s5bti1ojr.apps.googleusercontent.com"; // This would come from environment variables in a real app
-const GOOGLE_API_SCOPES = "https://www.googleapis.com/auth/calendar.events";
-
 const GoogleCalendarIntegration = ({ isConnected, onStatusChange }: GoogleCalendarIntegrationProps) => {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
+  const [events, setEvents] = useState<any[]>([]);
   const { toast } = useToast();
-  
+
+  // ✅ Function to connect Google via Supabase OAuth
   const handleConnectGoogle = async () => {
     try {
       setLoading(true);
-      setError('');
-      
-      // Load the Google API client
-      await loadGoogleApiScript();
-      
-      // Initialize the Google API client
-      (window as any).gapi.load('client:auth2', async () => {
-        try {
-          await (window as any).gapi.client.init({
-            clientId: GOOGLE_API_CLIENT_ID,
-            scope: GOOGLE_API_SCOPES,
-            plugin_name: 'Luna Health'
-          });
-          
-          // Sign in with Google
-          const authInstance = (window as any).gapi.auth2.getAuthInstance();
-          const user = await authInstance.signIn();
-          
-          // Get the access token
-          const authResponse = user.getAuthResponse();
-          const accessToken = authResponse.access_token;
-          
-          // Get user's primary calendar
-          const response = await fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList', {
-            headers: {
-              'Authorization': `Bearer ${accessToken}`
-            }
-          });
-          
-          if (!response.ok) {
-            throw new Error('Failed to fetch calendars');
-          }
-          
-          const data = await response.json();
-          const primaryCalendar = data.items.find((cal: any) => cal.primary) || data.items[0];
-          
-          if (!primaryCalendar) {
-            throw new Error('No calendars found');
-          }
-          
-          // Sync cycle data with the primary calendar
-          const success = await syncWithGoogleCalendar(accessToken);
-          
-          if (success) {
-            toast({
-              title: "Calendar Connected",
-              description: "Your cycle predictions have been synced to Google Calendar"
-            });
-            
-            if (onStatusChange) {
-              onStatusChange(true);
-            }
-          } else {
-            throw new Error('Failed to sync cycle data');
-          }
-        } catch (err) {
-          console.error('Google Sign-In Error:', err);
-          setError(err instanceof Error ? err.message : 'Failed to connect to Google Calendar');
-        } finally {
-          setLoading(false);
-        }
+      setError("");
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: "https://femmelytics.vercel.app/auth/callback",
+          scopes: "https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly",
+        },
       });
+
+      if (error) throw new Error(error.message);
     } catch (err) {
-      console.error('Error loading Google API:', err);
-      setLoading(false);
-      setError('Failed to load Google Calendar API');
-    }
-  };
-  
-  const handleDisconnect = async () => {
-    try {
-      setLoading(true);
-      const authInstance = (window as any).gapi.auth2.getAuthInstance();
-      await authInstance.signOut();
-      
-      toast({
-        title: "Calendar Disconnected",
-        description: "Your Google Calendar has been disconnected"
-      });
-      
-      if (onStatusChange) {
-        onStatusChange(false);
-      }
-    } catch (err) {
-      console.error('Error disconnecting:', err);
-      setError('Failed to disconnect from Google Calendar');
+      console.error("Google Sign-In Error:", err);
+      setError(err instanceof Error ? err.message : "Failed to connect to Google Calendar");
     } finally {
       setLoading(false);
     }
   };
-  
-  const loadGoogleApiScript = (): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      if ((window as any).gapi) {
-        resolve();
-        return;
+
+  // ✅ Function to retrieve Google OAuth Access Token from Supabase
+  const fetchGoogleAccessToken = async () => {
+    try {
+      const { data, error } = await supabase.auth.getSession();
+
+      if (error || !data.session) {
+        console.error("Error fetching session:", error);
+        setError("Failed to get Google session");
+        return null;
       }
-      
-      const script = document.createElement('script');
-      script.src = 'https://apis.google.com/js/api.js';
-      script.onload = () => resolve();
-      script.onerror = (err) => reject(err);
-      document.body.appendChild(script);
-    });
+
+      return data.session.provider_token;
+    } catch (err) {
+      console.error("Error getting access token:", err);
+      setError("Failed to retrieve Google Access Token");
+      return null;
+    }
   };
-  
+
+  // ✅ Function to fetch Google Calendar events using the Access Token
+  const fetchGoogleCalendarEvents = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const accessToken = await fetchGoogleAccessToken();
+      if (!accessToken) throw new Error("Missing Google Access Token");
+
+      const response = await fetch(
+        "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to fetch calendar events");
+
+      const data = await response.json();
+      setEvents(data.items || []);
+
+      toast({
+        title: "Google Calendar Synced",
+        description: "Fetched events successfully!",
+      });
+
+    } catch (err) {
+      console.error("Error fetching Google Calendar:", err);
+      setError("Failed to retrieve Google Calendar data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isConnected) {
+      fetchGoogleCalendarEvents();
+    }
+  }, [isConnected]);
+
   return (
     <Card>
       <CardHeader>
@@ -141,7 +119,7 @@ const GoogleCalendarIntegration = ({ isConnected, onStatusChange }: GoogleCalend
           Sync your cycle predictions with Google Calendar
         </CardDescription>
       </CardHeader>
-      
+
       <CardContent>
         {error && (
           <Alert variant="destructive" className="mb-4">
@@ -150,33 +128,42 @@ const GoogleCalendarIntegration = ({ isConnected, onStatusChange }: GoogleCalend
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-        
+
         <p className="text-sm text-muted-foreground mb-4">
-          {isConnected 
+          {isConnected
             ? "Your cycle predictions are being synced to your Google Calendar. This makes it easier to track and plan around your cycle."
             : "Connect your Google Calendar to automatically sync your cycle predictions. This makes it easier to track and plan around your cycle."}
         </p>
-        
+
         <div className="flex items-center">
-          <div className={cn(
-            "h-2 w-2 rounded-full mr-2",
-            isConnected ? "bg-green-500" : "bg-red-500"
-          )}></div>
+          <div className={`h-2 w-2 rounded-full mr-2 ${isConnected ? "bg-green-500" : "bg-red-500"}`}></div>
           <span className="text-sm">
             {isConnected ? "Connected" : "Not connected"}
           </span>
         </div>
+
+        {isConnected && (
+          <div className="mt-4">
+            <h3 className="text-lg font-semibold mb-2">Upcoming Events:</h3>
+            {events.length > 0 ? (
+              <ul className="list-disc pl-5">
+                {events.slice(0, 5).map((event, index) => (
+                  <li key={index} className="text-sm">
+                    {event.summary} - {event.start?.dateTime || event.start?.date}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">No upcoming events found.</p>
+            )}
+          </div>
+        )}
       </CardContent>
-      
+
       <CardFooter>
-        <Button 
-          onClick={isConnected ? handleDisconnect : handleConnectGoogle}
-          disabled={loading}
-          variant={isConnected ? "outline" : "default"}
-          className={isConnected ? "" : "bg-lavender-500 hover:bg-lavender-600"}
-        >
+        <Button onClick={handleConnectGoogle} disabled={loading} variant={isConnected ? "outline" : "default"}>
           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {isConnected ? "Disconnect Calendar" : "Connect with Google"}
+          {isConnected ? "Re-Sync Calendar" : "Connect with Google"}
         </Button>
       </CardFooter>
     </Card>
