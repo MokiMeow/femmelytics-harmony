@@ -37,10 +37,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     })();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("Auth state changed:", event);
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN') {
         const sessionUser = session?.user || null;
+        await fetchSession();
         setUser(sessionUser);
         if (sessionUser) {
           const welcomeKey = `welcomeToastShown-${sessionUser.id}`;
@@ -59,6 +59,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           description: 'You have been signed out of your account.',
         });
         navigate('/');
+        window.location.reload();
       }
     });
 
@@ -83,9 +84,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (email: string, password: string) => {
     if (user && user.email !== email) {
       await supabase.auth.signOut();
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 300));
     }
-
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       toast({
@@ -95,14 +95,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       throw error;
     }
-
+    await fetchSession();
     if (data.user) {
       setUser(data.user);
     } else if (data.session && data.session.user) {
       setUser(data.session.user);
-    } else {
-      await fetchSession();
     }
+    window.location.reload();
     return data;
   };
 
@@ -113,7 +112,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         redirectTo: window.location.origin + '/dashboard',
       },
     });
-    
     if (error) {
       toast({
         title: "Google sign in failed",
@@ -135,6 +133,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw error;
     }
     setUser(null);
+    window.location.reload();
   };
 
   return (
