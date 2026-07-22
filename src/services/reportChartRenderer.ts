@@ -10,7 +10,7 @@ export const generateChartAsBase64 = (canvasId: string, chartData: ChartData, ch
     let hasData = false;
     
     if (chartType === 'pie') {
-      hasData = !!(chartData.labels?.length > 0 && chartData.values?.length > 0);
+      hasData = chartData.labels.length > 0 && (chartData.values?.length ?? 0) > 0;
     } else {
       hasData = !!(chartData.labels?.length > 0 && chartData.datasets?.[0]?.data?.length > 0);
     }

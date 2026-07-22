@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import Navigation from '@/components/Navigation';
 import HeroSection from '@/components/landing/HeroSection';
 import FeatureSection from '@/components/landing/FeatureSection';

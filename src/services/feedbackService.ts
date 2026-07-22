@@ -19,7 +19,7 @@ export const submitFeedback = async (
   feedback_type: FeedbackType,
   title: string,
   description: string
-): Promise<{ success: boolean; error?: string; data?: any }> => {
+): Promise<{ success: boolean; error?: string; data?: Feedback }> => {
   try {
     const { data: userData, error: userError } = await supabase.auth.getUser();
     if (userError) throw userError;
@@ -43,7 +43,7 @@ export const submitFeedback = async (
     
     if (error) throw error;
     
-    return { success: true, data };
+    return { success: true, data: data as Feedback };
   } catch (error) {
     console.error('Error submitting feedback:', error);
     return { 

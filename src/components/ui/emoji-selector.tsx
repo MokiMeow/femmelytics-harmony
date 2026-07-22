@@ -10,7 +10,7 @@ interface EmojiOptionProps extends React.HTMLAttributes<HTMLButtonElement> {
 }
 
 const EmojiOption = React.forwardRef<HTMLButtonElement, EmojiOptionProps>(
-  ({ emoji, label, active, value, className, ...props }, ref) => {
+  ({ emoji, label, active, value: _value, className, ...props }, ref) => {
     return (
       <button
         ref={ref}

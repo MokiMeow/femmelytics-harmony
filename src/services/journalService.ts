@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
+import { requireUserId } from './requireUser';
 
 export interface JournalEntry {
   id?: string;
@@ -34,10 +34,12 @@ export const fetchJournalEntries = async (): Promise<JournalEntry[]> => {
 
 // Fetch a single journal entry by ID
 export const fetchJournalEntry = async (id: string): Promise<JournalEntry | null> => {
+  const userId = await requireUserId();
   const { data, error } = await supabase
     .from('journal_entries')
     .select('*')
     .eq('id', id)
+    .eq('user_id', userId)
     .single();
     
   if (error) throw error;
@@ -66,10 +68,12 @@ export const createJournalEntry = async (entry: Omit<JournalEntry, 'id' | 'user_
 
 // Update an existing journal entry
 export const updateJournalEntry = async (id: string, updates: Partial<JournalEntry>): Promise<JournalEntry> => {
+  const userId = await requireUserId();
   const { data, error } = await supabase
     .from('journal_entries')
     .update(updates)
     .eq('id', id)
+    .eq('user_id', userId)
     .select()
     .single();
     
@@ -79,10 +83,12 @@ export const updateJournalEntry = async (id: string, updates: Partial<JournalEnt
 
 // Delete a journal entry
 export const deleteJournalEntry = async (id: string): Promise<void> => {
+  const userId = await requireUserId();
   const { error } = await supabase
     .from('journal_entries')
     .delete()
-    .eq('id', id);
+    .eq('id', id)
+    .eq('user_id', userId);
     
   if (error) throw error;
 };

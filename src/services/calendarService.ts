@@ -1,6 +1,5 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
 import { fetchCycleData } from './reportDataService';
 
 // Function to sync cycle data with Google Calendar
@@ -23,7 +22,7 @@ export const syncWithGoogleCalendar = async (accessToken: string): Promise<{ suc
   const cycleData = await fetchCycleData(userId, startDate, endDate);
   
   // Format cycle data for Google Calendar
-  const calendarEvents = cycleData.map((entry: any) => ({
+  const calendarEvents = cycleData.map((entry) => ({
     summary: `Cycle: ${entry.cycle_phase || 'Not specified'}`,
     description: `Flow: ${entry.flow_intensity || 'None'}\nNotes: ${entry.notes || ''}`,
     start: {

@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { requireUserId } from './requireUser';
 
 export interface ForumPost {
   id?: string;
@@ -83,10 +84,12 @@ export const createForumPost = async (post: Omit<ForumPost, 'id' | 'user_id' | '
 
 // Update an existing forum post
 export const updateForumPost = async (id: string, updates: Partial<ForumPost>): Promise<ForumPost> => {
+  const userId = await requireUserId();
   const { data, error } = await supabase
     .from('forum_posts')
     .update(updates)
     .eq('id', id)
+    .eq('user_id', userId)
     .select()
     .single();
     
@@ -96,10 +99,12 @@ export const updateForumPost = async (id: string, updates: Partial<ForumPost>): 
 
 // Delete a forum post
 export const deleteForumPost = async (id: string): Promise<void> => {
+  const userId = await requireUserId();
   const { error } = await supabase
     .from('forum_posts')
     .delete()
-    .eq('id', id);
+    .eq('id', id)
+    .eq('user_id', userId);
     
   if (error) throw error;
 };

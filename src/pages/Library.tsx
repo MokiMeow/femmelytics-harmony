@@ -1,15 +1,15 @@
 
-import React, { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import Navigation from '@/components/Navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Library as LibraryIcon, Search, BookOpen, Bookmark, Clock, BookMarked } from 'lucide-react';
+import { Library as LibraryIcon, Search, Bookmark, Clock, BookMarked } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format, parseISO } from 'date-fns';
 import { Article, fetchArticles, fetchArticlesByCategory, fetchArticle, hasUserBookmarkedArticle, bookmarkArticle, removeBookmark, fetchBookmarkedArticles } from '@/services/libraryService';
 
@@ -34,11 +34,7 @@ const Library = () => {
     "Exercise"
   ];
 
-  useEffect(() => {
-    loadArticles();
-  }, [selectedCategory, viewingBookmarks]);
-
-  const loadArticles = async () => {
+  const loadArticles = useCallback(async () => {
     try {
       setLoading(true);
       let data;
@@ -62,7 +58,11 @@ const Library = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedCategory, toast, viewingBookmarks]);
+
+  useEffect(() => {
+    void loadArticles();
+  }, [loadArticles]);
 
   const openArticle = async (article: Article) => {
     try {

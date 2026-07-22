@@ -1,18 +1,18 @@
 
-import React, { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import Navigation from '@/components/Navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format, parseISO } from 'date-fns';
-import { MessageSquare, Users, Heart, Search, Filter } from 'lucide-react';
+import { MessageSquare, Users, Heart, Search } from 'lucide-react';
 import { ForumPost, fetchForumPosts, createForumPost, fetchForumPostsByCategory } from '@/services/forumService';
 
 const Forums = () => {
@@ -43,11 +43,7 @@ const Forums = () => {
     "Exercise"
   ];
 
-  useEffect(() => {
-    loadPosts();
-  }, [selectedCategory]);
-
-  const loadPosts = async () => {
+  const loadPosts = useCallback(async () => {
     try {
       setLoading(true);
       let data;
@@ -69,7 +65,11 @@ const Forums = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedCategory, toast]);
+
+  useEffect(() => {
+    void loadPosts();
+  }, [loadPosts]);
 
   const handleCreatePost = async () => {
     try {

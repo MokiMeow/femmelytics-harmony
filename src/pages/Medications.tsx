@@ -1,47 +1,34 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import Navigation from '@/components/Navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Pill, PlusCircle, Bell, Check, X, Calendar, Clock, Pencil, Trash2 } from 'lucide-react';
+import { Pill, PlusCircle, Check, Calendar, Pencil, Trash2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { format, addDays, parseISO } from 'date-fns';
+import { addDays, format } from 'date-fns';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Medication, fetchMedications, fetchActiveMedications, createMedication, updateMedication, deleteMedication, markMedicationAsTaken, calculateAdherence } from '@/services/medicationService';
-
-const colorMap = {
-  'Birth Control': 'pink',
-  'Vitamin': 'yellow',
-  'Supplement': 'blue',
-  'Prescription': 'purple',
-  'Other': 'gray',
-};
+import { Medication, fetchActiveMedications, createMedication, updateMedication, deleteMedication, markMedicationAsTaken, calculateAdherence } from '@/services/medicationService';
 
 interface MedicationCardProps {
   medication: Medication;
   onEdit: (medication: Medication) => void;
   onDelete: (id: string) => void;
-  onRefresh: () => void;
 }
 
-const MedicationCard: React.FC<MedicationCardProps> = ({ medication, onEdit, onDelete, onRefresh }) => {
+const MedicationCard: React.FC<MedicationCardProps> = ({ medication, onEdit, onDelete }) => {
   const { toast } = useToast();
   const [taken, setTaken] = useState(false);
   const [adherence, setAdherence] = useState(0);
   const [loading, setLoading] = useState(true);
   
-  useEffect(() => {
-    loadAdherence();
-  }, [medication.id]);
-  
-  const loadAdherence = async () => {
+  const loadAdherence = useCallback(async () => {
     try {
       setLoading(true);
       if (medication.id) {
@@ -53,7 +40,11 @@ const MedicationCard: React.FC<MedicationCardProps> = ({ medication, onEdit, onD
     } finally {
       setLoading(false);
     }
-  };
+  }, [medication.id]);
+
+  useEffect(() => {
+    void loadAdherence();
+  }, [loadAdherence]);
   
   const handleMarkAsTaken = async () => {
     try {
@@ -65,7 +56,7 @@ const MedicationCard: React.FC<MedicationCardProps> = ({ medication, onEdit, onD
         title: 'Success',
         description: `${medication.name} marked as taken`,
       });
-      loadAdherence(); // Refresh adherence after marking as taken
+      void loadAdherence();
     } catch (error) {
       console.error('Error marking medication as taken:', error);
       toast({
@@ -177,9 +168,6 @@ const MedicationCard: React.FC<MedicationCardProps> = ({ medication, onEdit, onD
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <Bell size={14} />
-          </Button>
         </div>
       </CardFooter>
     </Card>
@@ -211,11 +199,7 @@ const Medications = () => {
     notes: '',
   });
 
-  useEffect(() => {
-    loadMedications();
-  }, []);
-
-  const loadMedications = async () => {
+  const loadMedications = useCallback(async () => {
     try {
       setLoading(true);
       const data = await fetchActiveMedications();
@@ -230,7 +214,11 @@ const Medications = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    void loadMedications();
+  }, [loadMedications]);
 
   const handleCreateMedication = async () => {
     try {
@@ -326,24 +314,6 @@ const Medications = () => {
       notes: '',
     });
     setSelectedMedication(null);
-  };
-
-  // Calculate upcoming refills
-  const getUpcomingRefills = () => {
-    const today = new Date();
-    return medications
-      .filter(med => med.active)
-      .map(med => {
-        const daysRemaining = Math.floor(Math.random() * 30) + 1; // Mock data for demonstration
-        const refillDate = addDays(today, daysRemaining);
-        return {
-          name: med.name,
-          remaining: daysRemaining,
-          date: format(refillDate, 'MMM d, yyyy'),
-        };
-      })
-      .sort((a, b) => a.remaining - b.remaining)
-      .slice(0, 2);
   };
 
   return (
@@ -478,7 +448,6 @@ const Medications = () => {
                 medication={medication}
                 onEdit={openEditDialog}
                 onDelete={handleDeleteMedication}
-                onRefresh={loadMedications}
               />
             ))}
           </div>
@@ -489,34 +458,6 @@ const Medications = () => {
             <p className="text-muted-foreground mb-4">Track your medications and never miss a dose</p>
             <Button onClick={() => setIsAddOpen(true)}>Add Your First Medication</Button>
           </div>
-        )}
-        
-        {medications.length > 0 && (
-          <Card className="mb-8 p-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium">Upcoming Refills</h3>
-              <Button variant="outline" size="sm">
-                View All
-              </Button>
-            </div>
-            <Separator className="my-4" />
-            <div className="space-y-4">
-              {getUpcomingRefills().map((refill, i) => (
-                <div key={i} className="flex justify-between items-center">
-                  <div>
-                    <h4 className="font-medium">{refill.name}</h4>
-                    <p className="text-sm text-muted-foreground">{refill.remaining} days remaining</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <span className="text-sm">{refill.date}</span>
-                    <Button size="icon" variant="ghost" className="h-8 w-8">
-                      <Bell size={14} />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
         )}
         
         <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
@@ -615,13 +556,6 @@ const Medications = () => {
           </DialogContent>
         </Dialog>
         
-        <div className="mt-8 text-center">
-          <p className="text-muted-foreground mb-4">Track your medications and never miss a dose</p>
-          <Button variant="outline" className="gap-2">
-            <Pill size={16} />
-            Medication History
-          </Button>
-        </div>
       </div>
     </div>
   );

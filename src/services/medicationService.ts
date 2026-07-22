@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
+import { requireUserId } from './requireUser';
+import { adherencePercentage, expectedDosesForFrequency } from './medicationAdherence';
 
 export interface Medication {
   id?: string;
@@ -9,9 +10,9 @@ export interface Medication {
   frequency: string;
   time_of_day: string;
   start_date: string;
-  end_date?: string;
-  notes?: string;
-  active?: boolean;
+  end_date?: string | null;
+  notes?: string | null;
+  active?: boolean | null;
   user_id?: string;
   created_at?: string;
   updated_at?: string;
@@ -21,8 +22,8 @@ export interface MedicationHistory {
   id?: string;
   medication_id: string;
   taken: boolean;
-  taken_at?: string;
-  notes?: string;
+  taken_at?: string | null;
+  notes?: string | null;
   user_id?: string;
   created_at?: string;
 }
@@ -70,10 +71,12 @@ export const fetchActiveMedications = async (): Promise<Medication[]> => {
 
 // Fetch a single medication by ID
 export const fetchMedication = async (id: string): Promise<Medication | null> => {
+  const userId = await requireUserId();
   const { data, error } = await supabase
     .from('medications')
     .select('*')
     .eq('id', id)
+    .eq('user_id', userId)
     .single();
     
   if (error) throw error;
@@ -102,10 +105,12 @@ export const createMedication = async (medication: Omit<Medication, 'id' | 'user
 
 // Update an existing medication
 export const updateMedication = async (id: string, updates: Partial<Medication>): Promise<Medication> => {
+  const userId = await requireUserId();
   const { data, error } = await supabase
     .from('medications')
     .update(updates)
     .eq('id', id)
+    .eq('user_id', userId)
     .select()
     .single();
     
@@ -115,10 +120,12 @@ export const updateMedication = async (id: string, updates: Partial<Medication>)
 
 // Delete a medication
 export const deleteMedication = async (id: string): Promise<void> => {
+  const userId = await requireUserId();
   const { error } = await supabase
     .from('medications')
     .delete()
-    .eq('id', id);
+    .eq('id', id)
+    .eq('user_id', userId);
     
   if (error) throw error;
 };
@@ -151,10 +158,12 @@ export const markMedicationAsTaken = async (medicationId: string, notes?: string
 
 // Get medication history for a specific medication
 export const getMedicationHistory = async (medicationId: string): Promise<MedicationHistory[]> => {
+  const userId = await requireUserId();
   const { data, error } = await supabase
     .from('medication_history')
     .select('*')
     .eq('medication_id', medicationId)
+    .eq('user_id', userId)
     .order('created_at', { ascending: false });
     
   if (error) throw error;
@@ -163,6 +172,7 @@ export const getMedicationHistory = async (medicationId: string): Promise<Medica
 
 // Calculate medication adherence (percentage of times taken)
 export const calculateAdherence = async (medicationId: string, days: number = 30): Promise<number> => {
+  const userId = await requireUserId();
   const medication = await fetchMedication(medicationId);
   if (!medication) return 0;
   
@@ -174,26 +184,12 @@ export const calculateAdherence = async (medicationId: string, days: number = 30
     .from('medication_history')
     .select('*')
     .eq('medication_id', medicationId)
+    .eq('user_id', userId)
     .gte('created_at', startDate.toISOString());
     
   if (error) throw error;
   
-  // Count expected doses based on frequency
-  let expectedDoses = 0;
-  
-  if (medication.frequency === 'Daily') {
-    expectedDoses = days;
-  } else if (medication.frequency === 'Twice daily') {
-    expectedDoses = days * 2;
-  } else if (medication.frequency === 'Weekly') {
-    expectedDoses = Math.ceil(days / 7);
-  } else {
-    // Default for other frequencies
-    expectedDoses = days;
-  }
-  
   const actualDoses = data?.filter(record => record.taken).length || 0;
-  
-  if (expectedDoses === 0) return 0;
-  return Math.round((actualDoses / expectedDoses) * 100);
+  const expectedDoses = expectedDosesForFrequency(medication.frequency, days);
+  return adherencePercentage(actualDoses, expectedDoses);
 };

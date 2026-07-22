@@ -14,8 +14,8 @@ export interface CycleEntry {
 export interface MoodEntry {
   id?: string;
   date: Date | string;
-  mood_score: number;
-  energy_score: number;
+  mood_score: number | null;
+  energy_score: number | null;
   notes?: string | null;
 }
 
@@ -23,7 +23,7 @@ export interface SymptomEntry {
   id?: string;
   date: Date | string;
   symptom_type: string;
-  severity: number;
+  severity: number | null;
 }
 
 export interface CycleStatistics {
@@ -233,7 +233,7 @@ const updateCycleStatistics = async (userId: string) => {
   const periodStartDates: string[] = [];
   let lastFlowDate: string | null = null;
 
-  cycleData.forEach((entry, index) => {
+  cycleData.forEach((entry) => {
     if (entry.flow_intensity !== 'none') {
       if (!lastFlowDate || (lastFlowDate && parseISO(entry.date).getTime() - parseISO(lastFlowDate).getTime() > 3 * 24 * 60 * 60 * 1000)) {
         periodStartDates.push(entry.date);

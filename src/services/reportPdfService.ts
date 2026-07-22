@@ -1,6 +1,5 @@
 
 import jsPDF from 'jspdf';
-import { format } from 'date-fns';
 import { addHeaderFooter } from './pdf/pdfHeaderFooter';
 import { addTitlePage } from './pdf/titlePageGenerator';
 import { addCycleSection } from './pdf/pdfSections/cycleSection';

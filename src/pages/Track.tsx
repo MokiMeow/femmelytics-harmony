@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, Activity, Moon, Droplet, Thermometer, Heart, Plus, Save, ArrowLeft, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -119,8 +119,8 @@ const Track = () => {
         
         // Set mood and energy
         if (data.mood) {
-          setMood(data.mood.mood_score);
-          setEnergy(data.mood.energy_score);
+          setMood(data.mood.mood_score ?? 3);
+          setEnergy(data.mood.energy_score ?? 3);
           if (data.mood.notes) {
             setNotes(data.mood.notes);
           }
@@ -299,7 +299,7 @@ const Track = () => {
                         mode="single"
                         selected={date}
                         onSelect={(date) => date && setDate(date)}
-                        initialFocus
+                        autoFocus
                         className="pointer-events-auto"
                       />
                     </PopoverContent>

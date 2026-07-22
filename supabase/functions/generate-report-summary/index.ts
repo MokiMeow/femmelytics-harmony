@@ -1,121 +1,104 @@
+import {
+  boundedRecords,
+  boundedString,
+  corsHeaders,
+  hasBearerToken,
+  isRecord,
+  jsonResponse,
+  readJsonBody,
+} from "../_shared/http.ts";
 
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+function countBy(records: Record<string, unknown>[], key: string): Array<[string, number]> {
+  const counts = new Map<string, number>();
+  for (const record of records) {
+    const value = boundedString(record[key], 80);
+    if (value) counts.set(value, (counts.get(value) ?? 0) + 1);
+  }
+  return [...counts.entries()].sort((left, right) => right[1] - left[1]);
+}
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+function average(records: Record<string, unknown>[], key: string): number | null {
+  const values = records
+    .map((record) => record[key])
+    .filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+  return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
+}
 
-serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+function buildReportPrompt(reportData: Record<string, unknown>): string {
+  const lines = ["Create a concise health-tracking summary for review with a healthcare professional."];
+  const cycleData = boundedRecords(reportData.cycleData, 366);
+  const symptomData = boundedRecords(reportData.symptomsData, 366);
+  const moodData = boundedRecords(reportData.moodData, 366);
+  const medications = boundedRecords(reportData.medicationsData, 100);
+
+  const periodDays = cycleData.filter((entry) => entry.flow_intensity !== "none").length;
+  if (cycleData.length) lines.push(`Cycle entries: ${cycleData.length}; recorded period days: ${periodDays}.`);
+
+  const commonSymptoms = countBy(symptomData, "symptom_type").slice(0, 5);
+  if (commonSymptoms.length) {
+    lines.push(`Most frequently recorded symptoms: ${commonSymptoms.map(([name, count]) => `${name} (${count})`).join(", ")}.`);
   }
 
+  const averageMood = average(moodData, "mood_score");
+  const averageEnergy = average(moodData, "energy_score");
+  if (averageMood !== null) lines.push(`Average mood score: ${averageMood.toFixed(1)} out of 5.`);
+  if (averageEnergy !== null) lines.push(`Average energy score: ${averageEnergy.toFixed(1)} out of 5.`);
+
+  if (medications.length) {
+    const names = medications
+      .map((medication) => boundedString(medication.name, 100))
+      .filter((name): name is string => Boolean(name))
+      .slice(0, 20);
+    lines.push(`Active medications tracked: ${medications.length}${names.length ? ` (${names.join(", ")})` : ""}.`);
+  }
+
+  lines.push("Describe patterns without diagnosing, prescribing, or inventing facts. Use plain clinical language, 150–250 words, and state when the supplied data is insufficient.");
+  return lines.join("\n");
+}
+
+Deno.serve(async (request: Request) => {
+  if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders(request) });
+  if (request.method !== "POST") return jsonResponse(request, { error: "Method not allowed." }, 405);
+  if (!hasBearerToken(request)) return jsonResponse(request, { error: "Authentication required." }, 401);
+  if (!OPENAI_API_KEY) return jsonResponse(request, { error: "Report summaries are not configured." }, 503);
+
   try {
-    const { reportData } = await req.json();
-    
-    // Format the data for OpenAI
-    let promptText = "Generate a concise health summary based on the following data:\n\n";
-    
-    if (reportData.cycleData?.length > 0) {
-      promptText += `Cycle data: ${reportData.cycleData.length} entries over ${reportData.period} days.\n`;
-      
-      // Add cycle length and regularity info
-      if (reportData.cycleData.filter((entry: any) => entry.flow_intensity !== 'none').length > 0) {
-        promptText += `Period days recorded: ${reportData.cycleData.filter((entry: any) => entry.flow_intensity !== 'none').length}.\n`;
-      }
+    const body = await readJsonBody(request, 128 * 1024);
+    if (!isRecord(body) || !isRecord(body.reportData)) {
+      return jsonResponse(request, { error: "A reportData object is required." }, 400);
     }
-    
-    if (reportData.symptomsData?.length > 0) {
-      promptText += `Symptoms data: ${reportData.symptomsData.length} symptoms recorded.\n`;
-      
-      // Group symptoms by type
-      const symptomGroups: Record<string, number> = {};
-      reportData.symptomsData.forEach((entry: any) => {
-        if (!symptomGroups[entry.symptom_type]) {
-          symptomGroups[entry.symptom_type] = 0;
-        }
-        symptomGroups[entry.symptom_type]++;
-      });
-      
-      promptText += "Most common symptoms:\n";
-      Object.entries(symptomGroups)
-        .sort(([, a]: any, [, b]: any) => b - a)
-        .slice(0, 3)
-        .forEach(([symptom, count]: any) => {
-          promptText += `- ${symptom}: ${count} occurrences\n`;
-        });
-    }
-    
-    if (reportData.moodData?.length > 0) {
-      const moodScores = reportData.moodData
-        .filter((entry: any) => entry.mood_score !== null)
-        .map((entry: any) => entry.mood_score);
-      
-      const energyScores = reportData.moodData
-        .filter((entry: any) => entry.energy_score !== null)
-        .map((entry: any) => entry.energy_score);
-      
-      if (moodScores.length > 0) {
-        const avgMood = moodScores.reduce((sum: number, score: number) => sum + score, 0) / moodScores.length;
-        promptText += `Average mood score: ${avgMood.toFixed(1)} out of 5.\n`;
-      }
-      
-      if (energyScores.length > 0) {
-        const avgEnergy = energyScores.reduce((sum: number, score: number) => sum + score, 0) / energyScores.length;
-        promptText += `Average energy score: ${avgEnergy.toFixed(1)} out of 5.\n`;
-      }
-    }
-    
-    if (reportData.medicationsData?.length > 0) {
-      promptText += `Medications: Currently tracking ${reportData.medicationsData.length} medications.\n`;
-      reportData.medicationsData.forEach((med: any) => {
-        promptText += `- ${med.name} (${med.dosage}): ${med.frequency}, ${med.time_of_day}\n`;
-      });
-    }
-    
-    promptText += "\nProvide a concise professional health summary that could be shared with a healthcare provider. Include any notable patterns or trends. The summary should be about 200-300 words, written in a clinical yet understandable style. Do not include any disclaimers or introduce yourself as an AI.";
-    
-    console.log("Sending prompt to OpenAI:", promptText);
-    
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
+      signal: AbortSignal.timeout(30_000),
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: "gpt-4o-mini",
         messages: [
-          { role: 'system', content: 'You are a healthcare assistant tasked with generating concise, professional health summaries based on patient data.' },
-          { role: 'user', content: promptText }
+          { role: "system", content: "You summarize user-supplied health tracking data without giving medical advice." },
+          { role: "user", content: buildReportPrompt(body.reportData) },
         ],
-        temperature: 0.3,
+        temperature: 0.2,
         max_tokens: 500,
       }),
     });
 
-    const data = await response.json();
-    
     if (!response.ok) {
-      console.error('OpenAI API error:', data);
-      throw new Error(`OpenAI API error: ${data.error?.message || 'Unknown error'}`);
+      console.error("OpenAI report summary request failed", { status: response.status });
+      return jsonResponse(request, { error: "Report summary generation is temporarily unavailable." }, 502);
     }
-    
-    const summary = data.choices[0].message.content;
 
-    return new Response(JSON.stringify({ summary }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    const result = (await response.json()) as { choices?: Array<{ message?: { content?: unknown } }> };
+    const summary = boundedString(result.choices?.[0]?.message?.content, 4_000);
+    return summary
+      ? jsonResponse(request, { summary })
+      : jsonResponse(request, { error: "The summary service returned an invalid response." }, 502);
   } catch (error) {
-    console.error('Error in generate-report-summary function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    if (error instanceof RangeError) return jsonResponse(request, { error: error.message }, 413);
+    if (error instanceof SyntaxError) return jsonResponse(request, { error: error.message }, 400);
+    console.error("Report summary request failed", error instanceof Error ? error.message : "Unknown error");
+    return jsonResponse(request, { error: "Report summary generation failed." }, 500);
   }
 });

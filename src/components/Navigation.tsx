@@ -1,10 +1,10 @@
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, Book, MessageSquare, Library, Pill, HeartPulse } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { useMobile } from '@/hooks/useMobile';
 import UserNavigation from './UserNavigation';
 import { ThemeToggle } from './ThemeToggle';
