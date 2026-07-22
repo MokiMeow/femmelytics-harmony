@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Save, User, Mail, Calendar, Shield, Settings, Upload, Camera } from 'lucide-react';
+import { ArrowLeft, Save, User, Mail, Calendar, Shield, Settings, Camera } from 'lucide-react';
 import { Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
@@ -271,7 +271,7 @@ const ProfilePage = () => {
     }
   };
 
-  const handleCalendarStatusChange = async (connected: boolean) => {
+  const handleCalendarStatusChange = useCallback(async (connected: boolean) => {
     if (!user) return;
     
     try {
@@ -294,7 +294,7 @@ const ProfilePage = () => {
         variant: "destructive",
       });
     }
-  };
+  }, [toast, user]);
 
   const getActivityIcon = (type: string) => {
     switch (type) {

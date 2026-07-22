@@ -4,7 +4,6 @@ import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
 import { generateChartAsBase64 } from '../../reportChartRenderer';
 import { prepareCyclePhaseChartData } from '../../reportChartService';
-import { checkPageBreak } from '../pdfHeaderFooter';
 
 export const addCycleSection = async (
   doc: jsPDF, 

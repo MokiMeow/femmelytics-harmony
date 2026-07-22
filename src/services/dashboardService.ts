@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { format, addDays, parseISO, subDays, eachDayOfInterval, differenceInDays } from 'date-fns';
+import { format, parseISO, subDays, eachDayOfInterval, differenceInDays } from 'date-fns';
 import { CycleEntry, MoodEntry, SymptomEntry, CycleStatistics } from './trackerService';
 
 export interface DashboardData {

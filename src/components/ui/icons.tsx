@@ -1,5 +1,4 @@
 
-import React from 'react';
 import { PieChart, Lightbulb, MessageSquare } from 'lucide-react';
 
 // Re-export the specific icons

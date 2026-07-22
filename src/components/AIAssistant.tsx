@@ -1,24 +1,23 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useCallback, useState, useRef, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { VolumeIcon, PlusIcon, SendIcon, Mic, StopCircleIcon, History, ChevronRight, Trash2, X } from 'lucide-react';
+import { VolumeIcon, PlusIcon, SendIcon, StopCircleIcon, History, ChevronRight, Trash2 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchRecentEntries } from '@/services/trackerService';
-import { format } from 'date-fns';
 import { v4 as uuidv4 } from 'uuid';
 
 type Message = {
   id: string;
   role: 'user' | 'assistant';
   content: string;
-  timestamp: Date;
+  timestamp: string;
 };
 
 type ChatSession = {
@@ -29,6 +28,36 @@ type ChatSession = {
   updated_at: string;
 };
 
+type UserHealthData = Awaited<ReturnType<typeof fetchRecentEntries>>;
+
+const welcomeMessage: Message = {
+  id: '0',
+  role: 'assistant',
+  content: "Hello! I'm Luna, your women's health assistant. I can help you with questions about your cycle, suggest self-care practices, or provide information about menstrual health. How can I assist you today?",
+  timestamp: new Date(0).toISOString(),
+};
+
+const isMessage = (value: unknown): value is Message => {
+  if (!value || typeof value !== 'object') return false;
+
+  const candidate = value as Record<string, unknown>;
+  return (
+    typeof candidate.id === 'string' &&
+    (candidate.role === 'user' || candidate.role === 'assistant') &&
+    typeof candidate.content === 'string' &&
+    typeof candidate.timestamp === 'string'
+  );
+};
+
+const parseMessages = (value: unknown): Message[] => {
+  try {
+    const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+    return Array.isArray(parsed) && parsed.every(isMessage) ? parsed : [welcomeMessage];
+  } catch {
+    return [welcomeMessage];
+  }
+};
+
 const AIAssistant = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -36,7 +65,7 @@ const AIAssistant = () => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [userData, setUserData] = useState<any>(null);
+  const [userData, setUserData] = useState<UserHealthData | null>(null);
   const [audioSrc, setAudioSrc] = useState<string | null>(null);
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string>('');
@@ -44,14 +73,6 @@ const AIAssistant = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   
-  // Initial welcome message
-  const welcomeMessage = {
-    id: '0',
-    role: 'assistant' as const,
-    content: "Hello! I'm Luna, your women's health assistant. I can help you with questions about your cycle, suggest self-care practices, or provide information about menstrual health. How can I assist you today?",
-    timestamp: new Date(),
-  };
-
   // Load chat sessions from Supabase
   useEffect(() => {
     const loadChatSessions = async () => {
@@ -71,7 +92,7 @@ const AIAssistant = () => {
           const typedSessions: ChatSession[] = data.map(session => ({
             id: session.id,
             title: session.title,
-            messages: JSON.parse(session.messages as string) as Message[],
+            messages: parseMessages(session.messages),
             created_at: session.created_at,
             updated_at: session.updated_at
           }));
@@ -88,8 +109,8 @@ const AIAssistant = () => {
   }, [user]);
 
   // Create new chat session
-  const createNewSession = async () => {
-    if (!user) return;
+  const createNewSession = useCallback(async (): Promise<string | null> => {
+    if (!user) return null;
     
     const sessionId = uuidv4();
     const newSession: ChatSession = {
@@ -119,7 +140,7 @@ const AIAssistant = () => {
       setChatSessions(prev => [newSession, ...prev]);
       setCurrentSessionId(sessionId);
       setMessages([welcomeMessage]);
-      
+      return sessionId;
     } catch (error) {
       console.error('Error creating new session:', error);
       toast({
@@ -127,8 +148,9 @@ const AIAssistant = () => {
         description: "Failed to create new conversation. Please try again.",
         variant: "destructive",
       });
+      return null;
     }
-  };
+  }, [toast, user]);
 
   // Delete chat session
   const deleteSession = async (sessionId: string, e: React.MouseEvent) => {
@@ -171,10 +193,10 @@ const AIAssistant = () => {
   };
 
   // Load session
-  const loadSession = (session: ChatSession) => {
+  const loadSession = useCallback((session: ChatSession) => {
     setMessages(session.messages);
     setCurrentSessionId(session.id);
-  };
+  }, []);
 
   // Update session title based on first user message
   const updateSessionTitle = async (sessionId: string, userMessage: string) => {
@@ -230,25 +252,34 @@ const AIAssistant = () => {
 
   // Handle audio playback
   useEffect(() => {
-    if (audioSrc && audioRef.current) {
-      audioRef.current.onended = () => setIsSpeaking(false);
-      audioRef.current.onplaying = () => setIsSpeaking(true);
-      audioRef.current.play().catch(error => {
+    const audio = audioRef.current;
+    if (audioSrc && audio) {
+      audio.onended = () => setIsSpeaking(false);
+      audio.onplaying = () => setIsSpeaking(true);
+      audio.play().catch(error => {
         console.error('Error playing audio:', error);
         setIsSpeaking(false);
       });
     }
+
+    return () => {
+      if (audio) {
+        audio.onended = null;
+        audio.onplaying = null;
+      }
+      if (audioSrc) URL.revokeObjectURL(audioSrc);
+    };
   }, [audioSrc]);
   
   // Create a new session when first loading if no sessions exist
   useEffect(() => {
     if (user && !isLoadingHistory && chatSessions.length === 0 && !currentSessionId) {
-      createNewSession();
+      void createNewSession();
     } else if (user && !isLoadingHistory && chatSessions.length > 0 && !currentSessionId) {
       // Load the most recent session
       loadSession(chatSessions[0]);
     }
-  }, [user, isLoadingHistory, chatSessions.length, currentSessionId]);
+  }, [user, isLoadingHistory, chatSessions, currentSessionId, createNewSession, loadSession]);
   
   // Save messages to session
   const saveMessagesToSession = async (sessionId: string, updatedMessages: Message[]) => {
@@ -283,7 +314,8 @@ const AIAssistant = () => {
   };
   
   const handleSendMessage = async () => {
-    if (!input.trim()) return;
+    const messageText = input.trim();
+    if (!messageText) return;
     if (!user) {
       toast({
         title: "Sign in required",
@@ -294,15 +326,17 @@ const AIAssistant = () => {
     }
     
     // Check if we need to create a new session
-    if (!currentSessionId) {
-      await createNewSession();
+    let sessionId = currentSessionId;
+    if (!sessionId) {
+      sessionId = await createNewSession() ?? '';
+      if (!sessionId) return;
     }
     
     const userMessage = {
       id: Date.now().toString(),
       role: 'user' as const,
-      content: input.trim(),
-      timestamp: new Date(),
+      content: messageText,
+      timestamp: new Date().toISOString(),
     };
     
     const updatedMessages = [...messages, userMessage];
@@ -312,16 +346,16 @@ const AIAssistant = () => {
     
     // If this is the first user message, use it to update the session title
     if (messages.length === 1 && messages[0].role === 'assistant') {
-      updateSessionTitle(currentSessionId, input.trim());
+      void updateSessionTitle(sessionId, messageText);
     }
     
     try {
       // Save user message to session
-      await saveMessagesToSession(currentSessionId, updatedMessages);
+      await saveMessagesToSession(sessionId, updatedMessages);
       
       const { data, error } = await supabase.functions.invoke('ai-assistant/chat', {
         body: {
-          message: input.trim(),
+          message: messageText,
           cycleData: userData?.cycleEntries || [],
           moodData: userData?.moodEntries || [],
           symptomsData: userData?.symptoms || [],
@@ -335,14 +369,14 @@ const AIAssistant = () => {
         id: (Date.now() + 1).toString(),
         role: 'assistant' as const,
         content: data.reply,
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
       };
       
       const finalMessages = [...updatedMessages, assistantMessage];
       setMessages(finalMessages);
       
       // Save assistant reply to session
-      await saveMessagesToSession(currentSessionId, finalMessages);
+      await saveMessagesToSession(sessionId, finalMessages);
       
     } catch (error) {
       console.error('Error sending message:', error);
@@ -412,7 +446,7 @@ const AIAssistant = () => {
         <CardTitle className="flex items-center gap-2 text-primary">
           <Avatar className="h-8 w-8 bg-lavender-100">
             <AvatarFallback className="text-lavender-600">AI</AvatarFallback>
-            <AvatarImage src="/luna-avatar.png" alt="Luna" />
+            <AvatarImage src="/luna-avatar.svg" alt="Luna" />
           </Avatar>
           <span>Luna | Your Health Assistant</span>
         </CardTitle>
@@ -451,32 +485,32 @@ const AIAssistant = () => {
                     </div>
                   ) : (
                     chatSessions.map((session) => (
-                      <SheetClose asChild key={session.id}>
+                      <div
+                        className={`mb-2 flex items-center rounded-md ${
+                          currentSessionId === session.id ? 'bg-muted' : ''
+                        }`}
+                        key={session.id}
+                      >
+                        <SheetClose asChild>
+                          <Button
+                            variant="ghost"
+                            className="min-w-0 flex-1 justify-start text-left"
+                            onClick={() => loadSession(session)}
+                          >
+                            <span className="truncate">{session.title}</span>
+                            <ChevronRight className="ml-auto h-4 w-4 shrink-0 opacity-70" />
+                          </Button>
+                        </SheetClose>
                         <Button
+                          aria-label={`Delete ${session.title}`}
                           variant="ghost"
-                          className={`w-full justify-start text-left mb-2 ${
-                            currentSessionId === session.id ? 'bg-muted' : ''
-                          }`}
-                          onClick={() => loadSession(session)}
+                          size="icon"
+                          className="mr-1 h-7 w-7 shrink-0 opacity-70 hover:opacity-100"
+                          onClick={(event) => deleteSession(session.id, event)}
                         >
-                          <div className="flex items-center justify-between w-full">
-                            <div className="flex items-center truncate">
-                              <span className="truncate">{session.title}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 opacity-70 hover:opacity-100"
-                                onClick={(e) => deleteSession(session.id, e)}
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                              <ChevronRight className="h-4 w-4 opacity-70" />
-                            </div>
-                          </div>
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
-                      </SheetClose>
+                      </div>
                     ))
                   )}
                 </div>
@@ -504,7 +538,7 @@ const AIAssistant = () => {
                 <div className="mb-4">
                   <Avatar className="h-16 w-16 mx-auto">
                     <AvatarFallback className="text-lavender-600 text-xl">AI</AvatarFallback>
-                    <AvatarImage src="/luna-avatar.png" alt="Luna" />
+                    <AvatarImage src="/luna-avatar.svg" alt="Luna" />
                   </Avatar>
                 </div>
                 <h3 className="text-lg font-medium mb-2">Welcome to Luna</h3>
@@ -565,6 +599,7 @@ const AIAssistant = () => {
             placeholder="Ask Luna about your cycle, health tips, or self-care..."
             className="min-h-10 resize-none"
             disabled={isLoading}
+            maxLength={2000}
           />
           <Button
             onClick={handleSendMessage}

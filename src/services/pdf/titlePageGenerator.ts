@@ -9,8 +9,6 @@ export const addTitlePage = (
   endDate: Date, 
   reportData: any
 ): void => {
-  const pageWidth = doc.internal.pageSize.width;
-  
   // Add header and footer
   addHeaderFooter(doc, 1);
   
@@ -70,6 +68,5 @@ export const addTitlePage = (
   
   if (reportData.summary) {
     doc.text(`${contentIndex}. Health Summary (AI Generated)`, 25, yPosition);
-    yPosition += 8;
   }
 };

@@ -7,7 +7,7 @@ export interface Article {
   summary: string;
   content: string;
   category: string;
-  image_url?: string;
+  image_url?: string | null;
   reading_time: number;
   created_at?: string;
   updated_at?: string;

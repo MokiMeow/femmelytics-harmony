@@ -92,7 +92,7 @@ const DataTypeSelectionTab: React.FC<DataTypeSelectionTabProps> = ({
                     mode="single"
                     selected={startDate}
                     onSelect={setStartDate}
-                    initialFocus
+                    autoFocus
                     disabled={(date) => date > new Date() || (endDate ? date > endDate : false)}
                   />
                 </PopoverContent>
@@ -120,7 +120,7 @@ const DataTypeSelectionTab: React.FC<DataTypeSelectionTabProps> = ({
                     mode="single"
                     selected={endDate}
                     onSelect={setEndDate}
-                    initialFocus
+                    autoFocus
                     disabled={(date) => date > new Date() || (startDate ? date < startDate : false)}
                   />
                 </PopoverContent>

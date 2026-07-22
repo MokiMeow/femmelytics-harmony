@@ -1,6 +1,5 @@
 
 import jsPDF from 'jspdf';
-import { checkPageBreak } from '../pdfHeaderFooter';
 
 export const addSummarySection = (
   doc: jsPDF,

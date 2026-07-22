@@ -1,5 +1,4 @@
 
-import React from 'react';
 import { ArrowLeft, BookOpen, Heart, ShieldCheck, Award, UserCheck, BarChart2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Navigation from '@/components/Navigation';

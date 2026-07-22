@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title description">
+  <title id="title">Luna assistant avatar</title>
+  <desc id="description">A crescent moon and sparkle on a lavender background.</desc>
+  <defs>
+    <linearGradient id="background" x1="16" y1="12" x2="112" y2="116" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8b5cf6"/>
+      <stop offset="1" stop-color="#ec4899"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="64" fill="url(#background)"/>
+  <path d="M76 27c-15 5-26 19-26 36 0 21 17 38 38 38 5 0 10-1 14-3-7 11-20 18-34 18-23 0-42-19-42-42 0-22 18-41 40-42 3-2 6-4 10-5Z" fill="#fff" opacity=".96"/>
+  <path d="m91 27 3 8 8 3-8 3-3 8-3-8-8-3 8-3 3-8Z" fill="#fef3c7"/>
+  <circle cx="105" cy="59" r="4" fill="#fef3c7"/>
+</svg>

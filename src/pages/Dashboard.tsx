@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { lazy, Suspense, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  Calendar, Activity, Heart, BarChart3, LineChart as LucideLineChart, 
-  TrendingUp, MoreHorizontal, Filter, Info, Droplet, Moon, Clock, 
+  Calendar, Activity, Heart, BarChart3,
+  TrendingUp, MoreHorizontal, Info, Droplet, Moon, Clock,
   AlertCircle, Star, Thermometer, MessageSquare, Loader2, FileText
 } from 'lucide-react';
 import Navigation from '@/components/Navigation';
@@ -17,7 +17,8 @@ import { fetchDashboardData } from '@/services/dashboardService';
 import { parseISO, format, addDays } from 'date-fns';
 import { useToast } from '@/components/ui/use-toast';
 import FeedbackDialog from '@/components/FeedbackDialog';
-import ExportReportDialog from '@/components/ExportReportDialog';
+
+const ExportReportDialog = lazy(() => import('@/components/ExportReportDialog'));
 
 const formatDateRange = (days: number) => {
   const today = new Date();
@@ -67,6 +68,7 @@ const Dashboard = () => {
   const cycleDayInfo = calculateCycleDay();
   
   const generateInsights = () => {
+    if (!dashboardData) return [];
     const insights = [];
     
     if (dashboardData?.statistics?.next_predicted_date) {
@@ -164,6 +166,10 @@ const Dashboard = () => {
   };
   
   const recentSymptoms = getRecentSymptoms();
+  const moodTrend = dashboardData?.moodTrendData ?? [];
+  const moodTrendChange = moodTrend.length >= 2
+    ? moodTrend[moodTrend.length - 1].average - moodTrend[moodTrend.length - 2].average
+    : null;
   
   return (
     <div className="min-h-screen bg-background">
@@ -319,20 +325,15 @@ const Dashboard = () => {
                                  dashboardData.moodEntries.length).toFixed(1)
                               : "N/A"}
                           </div>
-                          {dashboardData?.moodTrendData?.length >= 2 && (
+                          {moodTrendChange !== null && (
                             <div className={cn(
                               "text-xs px-2 py-0.5 rounded",
-                              dashboardData.moodTrendData[dashboardData.moodTrendData.length - 1].average > 
-                              dashboardData.moodTrendData[dashboardData.moodTrendData.length - 2].average
+                              moodTrendChange > 0
                                 ? "bg-green-100 text-green-700"
                                 : "bg-yellow-100 text-yellow-700"
                             )}>
-                              {dashboardData.moodTrendData[dashboardData.moodTrendData.length - 1].average > 
-                               dashboardData.moodTrendData[dashboardData.moodTrendData.length - 2].average
-                                ? "+"
-                                : ""}
-                              {(dashboardData.moodTrendData[dashboardData.moodTrendData.length - 1].average - 
-                                dashboardData.moodTrendData[dashboardData.moodTrendData.length - 2].average).toFixed(1)}
+                              {moodTrendChange > 0 ? "+" : ""}
+                              {moodTrendChange.toFixed(1)}
                             </div>
                           )}
                         </div>
@@ -547,7 +548,7 @@ const Dashboard = () => {
                                 outerRadius={90}
                                 paddingAngle={2}
                                 dataKey="value"
-                                label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                                label={({ name, percent }) => `${name} (${((percent ?? 0) * 100).toFixed(0)}%)`}
                                 labelLine={false}
                               >
                                 {dashboardData.symptomsPieData.map((entry, index) => (
@@ -732,7 +733,7 @@ const Dashboard = () => {
                             <YAxis domain={[1, 5]} />
                             <Tooltip 
                               contentStyle={{ backgroundColor: 'white', borderRadius: '0.5rem', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                              formatter={(value: number) => [`${value.toFixed(1)}`, "Average Mood"]}
+                              formatter={(value) => [Number(value ?? 0).toFixed(1), "Average Mood"]}
                             />
                             <Line 
                               type="monotone" 
@@ -961,10 +962,14 @@ const Dashboard = () => {
         )}
       </div>
       
-      <ExportReportDialog 
-        open={showExportDialog} 
-        onOpenChange={setShowExportDialog} 
-      />
+      {showExportDialog && (
+        <Suspense fallback={null}>
+          <ExportReportDialog
+            open={showExportDialog}
+            onOpenChange={setShowExportDialog}
+          />
+        </Suspense>
+      )}
     </div>
   );
 };

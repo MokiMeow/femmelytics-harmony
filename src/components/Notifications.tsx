@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Bell } from 'lucide-react';
 import { 
   DropdownMenu, 
@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { addDays, format, isPast, parseISO } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 
 type Notification = {
   id: string;
@@ -52,7 +52,7 @@ const Notifications = () => {
         const readNotifications = readNotificationsString ? JSON.parse(readNotificationsString) : [];
         const dismissedNotifications = JSON.parse(dismissedNotificationsString);
         
-        let tempNotifications: Notification[] = [];
+        const tempNotifications: Notification[] = [];
         
         // Add period prediction notification if available
         if (statsData?.next_predicted_date) {

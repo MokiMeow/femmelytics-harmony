@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle 
 } from '@/components/ui/dialog';
@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { generateReport, ExportDataType, ExportPeriod } from '@/services/reportService';
+import type { ExportDataType, ExportPeriod } from '@/services/reportService';
 import { fetchActiveMedications, Medication } from '@/services/medicationService';
 import DataTypeSelectionTab from './report/DataTypeSelectionTab';
 import MedicationsTab from './report/MedicationsTab';
@@ -58,6 +58,8 @@ const ExportReportDialog = ({ open, onOpenChange }: ExportReportDialogProps) => 
   const handleExport = async () => {
     setLoading(true);
     try {
+      const { generateReport } = await import('@/services/reportService');
+
       // Prepare medication filter
       const medicationFilter = selectedMedications.includes('all') 
         ? 'all' 

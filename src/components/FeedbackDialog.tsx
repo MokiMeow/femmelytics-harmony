@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -31,7 +31,7 @@ import { MessageSquare, BugIcon, Lightbulb } from 'lucide-react';
 
 const feedbackFormSchema = z.object({
   feedbackType: z.enum(['bug', 'feature_request', 'general'], {
-    required_error: 'Please select a feedback type',
+    error: 'Please select a feedback type',
   }),
   title: z.string().min(5, {
     message: 'Title must be at least 5 characters.',
@@ -80,7 +80,7 @@ const FeedbackDialog = () => {
           variant: "destructive",
         });
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error submitting feedback",
         description: "Something went wrong. Please try again.",

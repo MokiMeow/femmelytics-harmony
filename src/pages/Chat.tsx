@@ -1,5 +1,4 @@
 
-import React from 'react';
 import Navigation from '@/components/Navigation';
 import AIAssistant from '@/components/AIAssistant';
 import { useAuth } from '@/contexts/AuthContext';

@@ -4,7 +4,6 @@ import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
 import { generateChartAsBase64 } from '../../reportChartRenderer';
 import { prepareMoodChartData } from '../../reportChartService';
-import { checkPageBreak } from '../pdfHeaderFooter';
 
 export const addMoodSection = async (
   doc: jsPDF, 
